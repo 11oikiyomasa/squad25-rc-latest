@@ -1,0 +1,35 @@
+name: Import final SQUAD.25 source
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  import-final:
+    if: ${{ hashFiles('.transfer/READY') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Rebuild source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat $(find .transfer -maxdepth 1 -name 'part-*.b64' -print | sort -V) > /tmp/squad25-source.b64
+          base64 -d /tmp/squad25-source.b64 > /tmp/squad25-source.tar.gz
+          rm -rf /tmp/squad25-extract
+          mkdir -p /tmp/squad25-extract
+          tar -xzf /tmp/squad25-source.tar.gz -C /tmp/squad25-extract
+          test -d /tmp/squad25-extract/squad25-work
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' ! -name '.transfer' -exec rm -rf {} +
+          cp -a /tmp/squad25-extract/squad25-work/. .
+          rm -rf .transfer .github/workflows/import-final-source.yml
+      - name: Commit final source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Import SQUAD.25 final source'
+          git push origin main
