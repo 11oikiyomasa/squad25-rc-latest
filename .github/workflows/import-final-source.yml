@@ -6,17 +6,29 @@ permissions:
   contents: write
 jobs:
   import-final:
-    if: ${{ hashFiles('.transfer/READY') != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Rebuild source archive
+      - name: Check ready marker
+        id: ready
+        shell: bash
+        run: |
+          if [[ -f .transfer/READY && -f .transfer/SHA256 ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Rebuild and verify source archive
+        if: steps.ready.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
           cat $(find .transfer -maxdepth 1 -name 'part-*.b64' -print | sort -V) > /tmp/squad25-source.b64
           base64 -d /tmp/squad25-source.b64 > /tmp/squad25-source.tar.gz
+          expected="$(tr -d '[:space:]' < .transfer/SHA256)"
+          actual="$(sha256sum /tmp/squad25-source.tar.gz | awk '{print $1}')"
+          test "$actual" = "$expected"
           rm -rf /tmp/squad25-extract
           mkdir -p /tmp/squad25-extract
           tar -xzf /tmp/squad25-source.tar.gz -C /tmp/squad25-extract
@@ -25,6 +37,7 @@ jobs:
           cp -a /tmp/squad25-extract/squad25-work/. .
           rm -rf .transfer .github/workflows/import-final-source.yml
       - name: Commit final source
+        if: steps.ready.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
