@@ -38,7 +38,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
     <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
       <header className="sticky top-0 z-30 border-b border-white/8 bg-[#0c0d0f]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="/#roster" className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.18em] text-white/50 hover:text-white">
+          <a href="/roster" className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.18em] text-white/50 hover:text-white">
             <ArrowLeft size={15} /> Back to roster
           </a>
           <div className="text-[10px] font-black uppercase tracking-[.22em] text-white/30">{profile.name} / Profile</div>
@@ -88,7 +88,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
                 <div className="text-[9px] uppercase tracking-[.18em] text-white/25">{publishedCuts.length ? 'tap a cut to play' : 'no public cuts yet'}</div>
               </div>
 
-              <MemberTape montages={member.montages} />
+              <MemberTape montages={publishedCuts} />
 
               <div className="mt-10 grid gap-2 sm:grid-cols-2">
                 {(() => {
