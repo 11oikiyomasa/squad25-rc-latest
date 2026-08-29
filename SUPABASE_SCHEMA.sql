@@ -93,25 +93,40 @@ alter table public.achievements enable row level security;
 alter table public.gallery_items enable row level security;
 alter table public.admin_users enable row level security;
 
-create policy if not exists "Public can read squad settings" on public.squad_settings for select using (true);
-create policy if not exists "Public can read members" on public.members for select using (true);
-create policy if not exists "Public can read montages" on public.montages for select using (true);
-create policy if not exists "Public can read achievements" on public.achievements for select using (true);
-create policy if not exists "Public can read gallery" on public.gallery_items for select using (true);
-create policy if not exists "Admins manage squad settings" on public.squad_settings for all using (private.is_admin()) with check (private.is_admin());
-create policy if not exists "Admins manage members" on public.members for all using (private.is_admin()) with check (private.is_admin());
-create policy if not exists "Admins manage montages" on public.montages for all using (private.is_admin()) with check (private.is_admin());
-create policy if not exists "Admins manage achievements" on public.achievements for all using (private.is_admin()) with check (private.is_admin());
-create policy if not exists "Admins manage gallery" on public.gallery_items for all using (private.is_admin()) with check (private.is_admin());
-create policy if not exists "Admins read admin allowlist" on public.admin_users for select using (private.is_admin() or user_id = auth.uid());
+drop policy if exists "Public can read squad settings" on public.squad_settings for select using (true);;
+create policy "Public can read squad settings" on public.squad_settings for select using (true);;
+drop policy if exists "Public can read members" on public.members for select using (true);;
+create policy "Public can read members" on public.members for select using (true);;
+drop policy if exists "Public can read montages" on public.montages for select using (true);;
+create policy "Public can read montages" on public.montages for select using (true);;
+drop policy if exists "Public can read achievements" on public.achievements for select using (true);;
+create policy "Public can read achievements" on public.achievements for select using (true);;
+drop policy if exists "Public can read gallery" on public.gallery_items for select using (true);;
+create policy "Public can read gallery" on public.gallery_items for select using (true);;
+drop policy if exists "Admins manage squad settings" on public.squad_settings for all using (private.is_admin()) with check (private.is_admin());;
+create policy "Admins manage squad settings" on public.squad_settings for all using (private.is_admin()) with check (private.is_admin());;
+drop policy if exists "Admins manage members" on public.members for all using (private.is_admin()) with check (private.is_admin());;
+create policy "Admins manage members" on public.members for all using (private.is_admin()) with check (private.is_admin());;
+drop policy if exists "Admins manage montages" on public.montages for all using (private.is_admin()) with check (private.is_admin());;
+create policy "Admins manage montages" on public.montages for all using (private.is_admin()) with check (private.is_admin());;
+drop policy if exists "Admins manage achievements" on public.achievements for all using (private.is_admin()) with check (private.is_admin());;
+create policy "Admins manage achievements" on public.achievements for all using (private.is_admin()) with check (private.is_admin());;
+drop policy if exists "Admins manage gallery" on public.gallery_items for all using (private.is_admin()) with check (private.is_admin());;
+create policy "Admins manage gallery" on public.gallery_items for all using (private.is_admin()) with check (private.is_admin());;
+drop policy if exists "Admins read admin allowlist" on public.admin_users for select using (private.is_admin() or user_id = auth.uid());;
+create policy "Admins read admin allowlist" on public.admin_users for select using (private.is_admin() or user_id = auth.uid());;
 
 insert into storage.buckets (id, name, public) values ('squad-media','squad-media',true)
 on conflict (id) do update set public = true;
 
-create policy if not exists "Public can read squad media" on storage.objects for select using (bucket_id = 'squad-media');
-create policy if not exists "Admins can upload squad media" on storage.objects for insert with check (bucket_id = 'squad-media' and private.is_admin());
-create policy if not exists "Admins can update squad media" on storage.objects for update using (bucket_id = 'squad-media' and private.is_admin()) with check (bucket_id = 'squad-media' and private.is_admin());
-create policy if not exists "Admins can delete squad media" on storage.objects for delete using (bucket_id = 'squad-media' and private.is_admin());
+drop policy if exists "Public can read squad media" on storage.objects for select using (bucket_id = 'squad-media');;
+create policy "Public can read squad media" on storage.objects for select using (bucket_id = 'squad-media');;
+drop policy if exists "Admins can upload squad media" on storage.objects for insert with check (bucket_id = 'squad-media' and private.is_admin());;
+create policy "Admins can upload squad media" on storage.objects for insert with check (bucket_id = 'squad-media' and private.is_admin());;
+drop policy if exists "Admins can update squad media" on storage.objects for update using (bucket_id = 'squad-media' and private.is_admin()) with check (bucket_id = 'squad-media' and private.is_admin());;
+create policy "Admins can update squad media" on storage.objects for update using (bucket_id = 'squad-media' and private.is_admin()) with check (bucket_id = 'squad-media' and private.is_admin());;
+drop policy if exists "Admins can delete squad media" on storage.objects for delete using (bucket_id = 'squad-media' and private.is_admin());;
+create policy "Admins can delete squad media" on storage.objects for delete using (bucket_id = 'squad-media' and private.is_admin());;
 
 -- Restrict upload type/size through application validation. The bucket is intentionally public for optimized profile/media delivery.
 
