@@ -27,10 +27,15 @@ export function MemberModal({ member, initialMontageIndex = 0, onClose }: { memb
   const activeVideo = video ?? member.montages[0] ?? null;
   return (
     <div role="dialog" aria-modal="true" aria-label={`${member.nickname} player profile`} className="fixed inset-0 z-[70] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-6" onMouseDown={onClose}>
-      <div className="max-h-[92vh] w-full max-w-6xl overflow-auto border border-white/10 bg-[#0c0e11] shadow-2xl" onMouseDown={(e)=>e.stopPropagation()}>
+      <div className="relative max-h-[94vh] w-full max-w-6xl overflow-auto border border-white/10 bg-[#0c0e11] shadow-2xl" onMouseDown={(e)=>e.stopPropagation()}>
+        <div className="sticky top-3 z-30 -mb-11 mr-3 ml-auto grid h-11 w-11 place-items-center">
+          <button type="button" onClick={onClose} aria-label="Close player profile" className="grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-black/90 text-white/85 shadow-lg backdrop-blur-md transition hover:border-white/45 hover:bg-white hover:text-black">
+            <X size={21}/>
+          </button>
+        </div>
         <div className="grid lg:grid-cols-[.72fr_1.28fr]">
-          <div className="relative min-h-[340px] overflow-hidden bg-[#15181d] lg:min-h-[680px]">
-            <Image src={member.photo} alt={`${member.nickname} profile`} fill sizes="(max-width: 1023px) 100vw, 42vw" className="object-cover" priority />
+          <div className="relative mx-auto aspect-[9/16] w-full max-w-[360px] overflow-hidden bg-[#15181d] sm:max-w-[480px] lg:mx-0 lg:max-w-none lg:aspect-auto lg:min-h-[680px]">
+            <Image src={member.photo} alt={`${member.nickname} profile`} fill sizes="(max-width: 639px) 360px, (max-width: 1023px) 480px, 42vw" className="object-cover" priority />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/35 to-transparent p-6 pt-24">
               <div className="mb-3 text-xs tracking-[.28em] text-white/55">PROFILE / {member.number}</div>
               <div className="font-display text-6xl uppercase leading-none" style={{color:member.accent}}>{member.nickname}</div>
@@ -38,10 +43,9 @@ export function MemberModal({ member, initialMontageIndex = 0, onClose }: { memb
             </div>
           </div>
           <div className="p-5 sm:p-8">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 pr-1">
               <div><div className="text-xs uppercase tracking-[.24em] text-white/45">{member.name}</div><h3 className="mt-2 text-2xl font-semibold">The tape</h3></div>
               <Link href={`/member/${member.id}`} className="border border-white/10 px-3 py-2 text-[9px] font-semibold uppercase tracking-[.16em] text-white/45 hover:border-white/25 hover:text-white">Open profile</Link>
-              <button type="button" onClick={onClose} aria-label="Close player profile" className="rounded-full border border-white/10 p-2 text-white/55 hover:text-white"><X/></button>
             </div>
             <p className="mt-5 max-w-xl text-sm leading-7 text-white/60">{member.bio}</p>
             <div className="mt-7 overflow-hidden border border-white/10 bg-black">
