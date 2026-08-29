@@ -38,10 +38,13 @@ export default function AdminStudio() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setLoadError(null);
     const local = readLocal();
     const pub = localStorage.getItem(PUBLISHED_KEY) ?? '';
     setPublished(pub);
@@ -61,10 +64,14 @@ export default function AdminStudio() {
           setMessage('Draft lokal dipertahankan. Review lalu Preview sebelum Publish.');
         }
       })
-      .catch((e) => setMessage(e instanceof Error ? e.message : 'Cloud content unavailable'))
+      .catch((e) => {
+        const detail = e instanceof Error ? e.message : 'Cloud content unavailable';
+        setMessage(detail);
+        if (!local) setLoadError(detail);
+      })
       .finally(() => { if (!cancelled) setReady(true); });
     return () => { cancelled = true; };
-  }, []);
+  }, [loadAttempt]);
 
   const selected = data?.members.find((m) => m.id === selectedId) ?? data?.members[0] ?? null;
   const filtered = useMemo(() => data?.members.filter((m) => `${m.nickname} ${m.name} ${m.role}`.toLowerCase().includes(query.toLowerCase())) ?? [], [data, query]);
@@ -144,7 +151,9 @@ export default function AdminStudio() {
     reader.readAsText(file);
   }
 
-  if (!ready || !data) return <main className="grid min-h-screen place-items-center bg-[#0c0d0f] text-[#f4f0e7]"><div className="text-center"><div className="font-display text-5xl uppercase">Loading Studio.</div><div className="mt-3 text-sm text-white/35">Checking draft and cloud state…</div></div></main>;
+  if (!ready) return <main className="grid min-h-screen place-items-center bg-[#0c0d0f] text-[#f4f0e7]"><div className="text-center"><div className="font-display text-5xl uppercase">Loading Studio.</div><div className="mt-3 text-sm text-white/35">Checking draft and cloud state…</div></div></main>;
+
+  if (!data) return <main className="grid min-h-screen place-items-center bg-[#0c0d0f] px-5 text-[#f4f0e7]"><div className="max-w-md text-center"><div className="font-display text-5xl uppercase">Studio unavailable.</div><div className="mt-3 text-sm leading-6 text-white/45">{loadError ?? 'No valid draft is available.'}</div><button type="button" onClick={() => { setReady(false); setLoadAttempt((n) => n + 1); }} className="mt-6 border border-white/10 px-4 py-3 text-[9px] font-black uppercase tracking-[.18em] hover:border-[#d7ff43]/35">Retry</button></div></main>;
 
   return (
     <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
