@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { squadProfile } from '@/data/squad';
+import { squadProfile, normalizeYoutubeId } from '@/data/squad';
 import { getSquadContent } from '@/lib/content';
 import { ArrowLeft } from '@/components/icons';
 import { MemberTape } from '@/components/member-tape';
@@ -32,6 +32,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
   const { members, profile } = await getSquadContent();
   const member = members.find((item) => item.id === id);
   if (!member) return notFound();
+  const publishedCuts = member.montages.filter((montage) => Boolean(normalizeYoutubeId(montage.youtubeId)));
 
   return (
     <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
@@ -65,8 +66,8 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
                 <h2 className="mt-2 text-3xl font-semibold">The player file</h2>
               </div>
               <div className="text-right">
-                <div className="font-display text-4xl" style={{ color: member.accent }}>{member.montages.length}</div>
-                <div className="text-[9px] uppercase tracking-[.18em] text-white/30">cuts archived</div>
+                <div className="font-display text-4xl" style={{ color: member.accent }}>{publishedCuts.length}</div>
+                <div className="text-[9px] uppercase tracking-[.18em] text-white/30">cuts public</div>
               </div>
             </div>
 
@@ -84,7 +85,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
                   <div className="text-[10px] uppercase tracking-[.22em] text-[#ff6b38]">Montage archive</div>
                   <h3 className="mt-1 text-lg font-semibold">Selected cuts</h3>
                 </div>
-                <div className="text-[9px] uppercase tracking-[.18em] text-white/25">tap a cut to play</div>
+                <div className="text-[9px] uppercase tracking-[.18em] text-white/25">{publishedCuts.length ? 'tap a cut to play' : 'no public cuts yet'}</div>
               </div>
 
               <MemberTape montages={member.montages} />
