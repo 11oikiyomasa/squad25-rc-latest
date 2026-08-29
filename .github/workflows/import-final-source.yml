@@ -14,7 +14,7 @@ jobs:
         id: ready
         shell: bash
         run: |
-          if [[ -f .transfer-bin/READY && -f .transfer-bin/SHA256 ]]; then
+          if [[ -f .transfer-final/FINAL_READY && -f .transfer-final/SHA256 ]]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -24,17 +24,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat $(find .transfer-bin -maxdepth 1 -name 'part-*.bin' -print | sort -V) > /tmp/squad25-source.tar.gz
-          expected="$(tr -d '[:space:]' < .transfer-bin/SHA256)"
+          cat $(find .transfer-final -maxdepth 1 -name 'final-*.b64' -print | sort -V) | base64 -d > /tmp/squad25-source.tar.gz
+          expected="$(tr -d '[:space:]' < .transfer-final/SHA256)"
           actual="$(sha256sum /tmp/squad25-source.tar.gz | awk '{print $1}')"
           test "$actual" = "$expected"
           rm -rf /tmp/squad25-extract
           mkdir -p /tmp/squad25-extract
           tar -xzf /tmp/squad25-source.tar.gz -C /tmp/squad25-extract
           test -d /tmp/squad25-extract/squad25-work
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' ! -name '.transfer' ! -name '.transfer-bin' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' ! -name '.transfer' ! -name '.transfer-bin' ! -name '.transfer-final' -exec rm -rf {} +
           cp -a /tmp/squad25-extract/squad25-work/. .
-          rm -rf .transfer .transfer-bin .github/workflows/import-final-source.yml
+          rm -rf .transfer .transfer-bin .transfer-final .github/workflows/import-final-source.yml
       - name: Commit final source
         if: steps.ready.outputs.ready == 'true'
         shell: bash
