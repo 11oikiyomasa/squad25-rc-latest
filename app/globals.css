@@ -40,7 +40,7 @@ button { cursor: pointer; }
   background: radial-gradient(circle at 80% 20%, rgba(215,255,67,.13), transparent 0 28%), radial-gradient(circle at 20% 80%, rgba(255,107,56,.10), transparent 0 22%), #0b0c0e;
 }
 
-.member-card { transition: transform .22s ease, border-color .22s ease, background .22s ease; aspect-ratio: 4 / 5; min-height: 0 !important; }
+.member-card { transition: transform .22s ease, border-color .22s ease, background .22s ease; aspect-ratio: 16 / 9; min-height: 0 !important; }
 .member-card:hover { transform: translateY(-5px); border-color: rgba(215,255,67,.36); background: #17191d; }
 
 .marquee { animation: scroll 26s linear infinite; }
@@ -55,5 +55,4 @@ button { cursor: pointer; }
 
 @media (max-width: 640px) {
   .grid-bg { background-size: 28px 28px; }
-  .member-card { aspect-ratio: 9 / 16; }
 }
