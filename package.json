@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "verify": "node scripts/verify.mjs && node scripts/verify-recruitment.mjs"
+    "verify": "node scripts/verify.mjs && node scripts/verify-recruitment.mjs && node scripts/verify-scrims.mjs"
   },
   "dependencies": {
     "next": "16.3.3",
