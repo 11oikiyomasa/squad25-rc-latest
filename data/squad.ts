@@ -8,21 +8,23 @@ export type Montage = {
   description: string;
 };
 
-
 export function normalizeYoutubeId(value: string): string {
   const input = value.trim();
   if (!input) return '';
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+
+  const isValid = (candidate: string | null) => candidate && /^[A-Za-z0-9_-]{11}$/.test(candidate) ? candidate : '';
+
   try {
     const url = new URL(input.startsWith('http') ? input : `https://${input}`);
     const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
-    if (hostname === 'youtu.be') return url.pathname.slice(1).split('/')[0].slice(0, 11);
+    if (hostname === 'youtu.be') return isValid(url.pathname.slice(1).split('/')[0] ?? '');
     if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
       const queryId = url.searchParams.get('v');
-      if (queryId) return queryId.slice(0, 11);
+      if (queryId) return isValid(queryId);
       const parts = url.pathname.split('/').filter(Boolean);
       const marker = parts[0];
-      if (marker === 'shorts' || marker === 'embed' || marker === 'live') return (parts[1] ?? '').slice(0, 11);
+      if (marker === 'shorts' || marker === 'embed' || marker === 'live') return isValid(parts[1] ?? '');
     }
   } catch {
     return '';
