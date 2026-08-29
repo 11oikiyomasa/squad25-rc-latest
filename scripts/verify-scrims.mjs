@@ -6,6 +6,7 @@ const requiredFiles = [
   'app/loading.tsx',
   'app/scrims/page.tsx',
   'components/scrims-content.tsx',
+  'components/match-center.tsx',
   'lib/scrims.ts',
   'app/api/admin/scrims/route.ts',
   'app/admin/scrims/page.tsx',
@@ -21,6 +22,7 @@ for (const file of requiredFiles) {
 const loading = fs.readFileSync(path.join(root, 'app/loading.tsx'), 'utf8');
 const publicPage = fs.readFileSync(path.join(root, 'app/scrims/page.tsx'), 'utf8');
 const publicContent = fs.readFileSync(path.join(root, 'components/scrims-content.tsx'), 'utf8');
+const matchCenter = fs.readFileSync(path.join(root, 'components/match-center.tsx'), 'utf8');
 const adminApi = fs.readFileSync(path.join(root, 'app/api/admin/scrims/route.ts'), 'utf8');
 const adminPage = fs.readFileSync(path.join(root, 'app/admin/scrims/page.tsx'), 'utf8');
 const control = fs.readFileSync(path.join(root, 'components/scrim-control.tsx'), 'utf8');
@@ -28,8 +30,9 @@ const sitemap = fs.readFileSync(path.join(root, 'app/sitemap.ts'), 'utf8');
 
 for (const [label, source, needles] of [
   ['loading screen', loading, ['SQUAD.25', 'Public squad archive', 'loading-sweep']],
-  ['public page', publicPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/scrims'"]],
-  ['public UI', publicContent, ['upcoming', 'COMPLETED', 'No public scrims scheduled']],
+  ['public page', publicPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/scrims'", 'Match Center']],
+  ['public wrapper', publicContent, ['MatchCenter', 'Scrim[]']],
+  ['match center', matchCenter, ['NEXT SCRIM', 'W / L', 'No next match', 'Open match center']],
   ['admin API', adminApi, ['ensureAdmin', 'POST', 'PATCH', 'DELETE']],
   ['admin page', adminPage, ['requireAdmin', 'ScrimControl']],
   ['admin control', control, ['/api/admin/scrims', 'PUBLIC', 'PRIVATE']],
