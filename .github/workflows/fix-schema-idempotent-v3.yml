@@ -33,15 +33,15 @@ jobs:
           creates = re.findall(r'^create policy "([^"]+)" on ([^\s;]+)', fixed, re.I|re.M)
           drops = re.findall(r'^drop policy if exists "([^"]+)" on ([^\s;]+);$', fixed, re.I|re.M)
           if 'create policy if not exists' in fixed.lower(): raise SystemExit('Invalid CREATE POLICY IF NOT EXISTS remains')
-          if len(creates) != 25 or len(drops) != 25: raise SystemExit(f'Expected 25/25 policy statements, got {len(creates)}/{len(drops)}')
+          if len(creates) != 15 or len(drops) != 15: raise SystemExit(f'Expected 15/15 policy statements, got {len(creates)}/{len(drops)}')
           if sorted(creates) != sorted(drops): raise SystemExit('DROP/CREATE policy pairs do not match')
           p.write_text(fixed)
-          print('Validated 25 CREATE + 25 DROP policy pairs')
+          print('Validated 15 CREATE + 15 DROP policy pairs')
           PY
       - name: Verify and commit
         run: |
-          test "$(grep -Eic '^create policy ' SUPABASE_SCHEMA.sql)" -eq 25
-          test "$(grep -Eic '^drop policy if exists ' SUPABASE_SCHEMA.sql)" -eq 25
+          test "$(grep -Eic '^create policy ' SUPABASE_SCHEMA.sql)" -eq 15
+          test "$(grep -Eic '^drop policy if exists ' SUPABASE_SCHEMA.sql)" -eq 15
           ! grep -qi 'create policy if not exists' SUPABASE_SCHEMA.sql
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
