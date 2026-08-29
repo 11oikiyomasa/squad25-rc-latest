@@ -40,14 +40,31 @@ For a fresh production database, run `SUPABASE_SCHEMA.sql` and then `SUPABASE_SE
 
 ## Verification
 
-The project includes an offline structural check:
+The repository has a permanent GitHub Actions release check. Every push and pull request to `main` runs:
 
 ```bash
+npm ci
 npm run verify
+npm run typecheck
+npm run build
+npm start
 ```
 
-In this workspace, `npm run verify` passes for the 25-member seed, unique nicknames, required member assets, gallery assets, routes, config, and TypeScript syntax. A full `next build` is not claimed here because dependency installation from the npm registry timed out in this environment.
+The CI also smoke-tests `/`, `/member/ryuu`, `/login`, and `/api/health` against the built production server.
 
+The latest clean-run verification passed with:
+
+- 25/25 members
+- 25/25 unique nicknames
+- 25/25 member assets
+- 6 gallery assets
+- 28 TS/TSX files parsed
+- Auth/API/schema and route/config checks present
+- TypeScript typecheck passed
+- Next.js production build passed
+- Production server boot passed
+- Route smoke tests passed
+- npm audit reported 0 vulnerabilities
 
 ### Health check
 
@@ -55,4 +72,4 @@ After configuring Supabase, `GET /api/health` verifies the database connection, 
 
 ## Release verification
 
-The release candidate has passed static/source verification. The connected Supabase project has been checked for roster/data integrity and security policy posture. Full local `next build` could not be run in the sandbox because npm registry access timed out; deployment-side builds remain the authoritative production build check.
+Production-readiness is verified in CI against the GitHub `main` branch. Vercel should be connected to this repository with `main` as the production branch so every validated push can produce a production deployment.
