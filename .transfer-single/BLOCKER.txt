@@ -1,0 +1,1 @@
+The ZIP is stored in the conversation workspace. This marker exists because binary blob creation must use the Git data API rather than the text contents API.
