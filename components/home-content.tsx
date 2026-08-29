@@ -25,6 +25,8 @@ export default function HomeContent({ content }: { content: ContentSnapshot }) {
   const openMember = (member: Member, montageIndex = 0) => setSelected({ member, montageIndex });
   const visible = useMemo(() => members.filter(m => (filter==='ALL'||m.role===filter) && `${m.nickname} ${m.name}`.toLowerCase().includes(query.toLowerCase())), [filter,query,members]);
   const featuredMontage: Member = members[3] ?? members[0]!;
+  const featuredCut = featuredMontage.montages.find((m) => Boolean(normalizeYoutubeId(m.youtubeId)));
+  const featuredCutCount = featuredMontage.montages.filter((m) => Boolean(normalizeYoutubeId(m.youtubeId))).length;
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#0c0d0f]">
       <div className="noise" />
@@ -47,7 +49,7 @@ export default function HomeContent({ content }: { content: ContentSnapshot }) {
             <div className="mb-7 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[.28em] text-white/42"><span className="h-px w-9 bg-[#d7ff43]"/> Public roster / {squadProfile.season}</div>
             <h1 className="font-display max-w-5xl break-words text-[clamp(5.1rem,13vw,12.5rem)] uppercase leading-[.72] text-white">{squadProfile.name.trim().split(/\s+/).map((part, index, parts) => <span key={`${part}-${index}`} className={index === parts.length - 1 ? 'text-[#d7ff43]' : ''}>{part}{index < parts.length - 1 ? ' ' : ''}</span>)}</h1>
             <p className="mt-8 max-w-xl text-base leading-7 text-white/55 sm:text-lg">{squadProfile.tagline} An evolving archive of who we are when the match gets messy.</p>
-            <div className="mt-8 flex flex-wrap gap-3"><a href="#roster" className="inline-flex items-center gap-3 bg-[#d7ff43] px-5 py-3 text-xs font-black uppercase tracking-[.18em] text-black hover:bg-[#e7ff83]">View roster <ArrowUpRight size={15}/></a><a href="#tape" className="inline-flex items-center gap-3 border border-white/12 px-5 py-3 text-xs font-black uppercase tracking-[.18em] text-white/80 hover:border-white/25">Watch a cut <Play size={14}/></a></div>
+            <div className="mt-8 flex flex-wrap gap-3"><a href="#roster" className="inline-flex items-center gap-3 bg-[#d7ff43] px-5 py-3 text-xs font-black uppercase tracking-[.18em] text-black hover:bg-[#e7ff83]">View roster <ArrowUpRight size={15}/></a><a href="#tape" className="inline-flex items-center gap-3 border border-white/12 px-5 py-3 text-xs font-black uppercase tracking-[.18em] text-white/80 hover:border-white/25">Explore the tape <Play size={14}/></a></div>
           </div>
           <div className="reveal lg:justify-self-end" style={{animationDelay:'120ms'}}>
             <div className="border border-white/10 bg-black/20 p-5 backdrop-blur-sm">
@@ -66,7 +68,7 @@ export default function HomeContent({ content }: { content: ContentSnapshot }) {
       <section id="roster" className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
         <div className="flex flex-col gap-8 border-b border-white/8 pb-8 lg:flex-row lg:items-end lg:justify-between">
           <div><div className="text-[10px] uppercase tracking-[.25em] text-[#d7ff43]">01 — Roster</div><h2 className="mt-3 font-display text-6xl uppercase leading-none sm:text-8xl">25 faces.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-white/45">Tap a player for the full profile and their montage cuts.</p></div>
-          <div className="w-full max-w-xl"><div className="flex flex-wrap items-center gap-2">{filters.map(f=><button type="button" key={f} onClick={()=>setFilter(f)} className={`border px-3 py-2 text-[10px] font-semibold uppercase tracking-[.16em] transition ${filter===f?'border-[#d7ff43] bg-[#d7ff43] text-black':'border-white/10 text-white/45 hover:text-white'}`}>{f}</button>)}<label className="ml-auto flex min-w-[210px] flex-1 items-center gap-2 border border-white/10 px-3 py-2 text-white/35"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search player" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25"/></label></div></div>
+          <div className="w-full max-w-xl"><div className="flex flex-wrap items-center gap-2">{filters.map(f=><button type="button" key={f} onClick={()=>setFilter(f)} className={`border px-3 py-2 text-[10px] font-semibold uppercase tracking-[.16em] transition ${filter===f?'border-[#d7ff43] bg-[#d7ff43] text-black':'border-white/10 text-white/45 hover:text-white'}`}>{f}</button>)}<label className="ml-auto flex min-w-[210px] flex-1 items-center gap-2 border border-white/10 px-3 py-2 text-white/35" aria-label="Search roster"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search player" aria-label="Search player" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25"/></label></div></div>
         </div>
         <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((m,i)=><MemberCard key={m.id} member={m} index={i} onOpen={openMember}/>) }
@@ -79,12 +81,12 @@ export default function HomeContent({ content }: { content: ContentSnapshot }) {
           <div className="grid-bg border-b border-white/8 p-6 sm:p-8 lg:border-b-0 lg:border-r lg:p-12"><div className="text-[10px] uppercase tracking-[.25em] text-[#ff6b38]">02 — The tape</div><h2 className="mt-3 font-display text-7xl uppercase leading-[.8] sm:text-9xl">WATCH<br/>THE<br/><span className="text-[#ff6b38]">CUT.</span></h2><p className="mt-8 max-w-xs text-sm leading-6 text-white/45">Featured player archive. No autoplay carousel. You choose when the highlight starts.</p><button type="button" onClick={()=>openMember(featuredMontage)} className="mt-8 inline-flex items-center gap-3 border border-white/12 px-4 py-3 text-[10px] font-black uppercase tracking-[.18em] hover:border-white/25">Open player <ArrowUpRight size={14}/></button></div>
           <div className="p-6 sm:p-8 lg:p-12">
             <div className="relative overflow-hidden border border-white/10 bg-black">
-              <Image src={youtubeThumbnail(featuredMontage.montages.find((m) => normalizeYoutubeId(m.youtubeId))?.youtubeId ?? '') || featuredMontage.photo} alt={`${featuredMontage.nickname} featured`} fill sizes="(max-width: 1023px) 100vw, 70vw" className="object-cover opacity-55" priority />
+              <Image src={youtubeThumbnail(featuredCut?.youtubeId ?? '') || featuredMontage.photo} alt={`${featuredMontage.nickname} featured`} fill sizes="(max-width: 1023px) 100vw, 70vw" className="object-cover opacity-55" priority />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-black/5"/><div className="absolute left-5 top-5 text-[10px] uppercase tracking-[.2em] text-white/50">Featured / {featuredMontage.role}</div>
-              <button type="button" onClick={()=>openMember(featuredMontage)} className="absolute inset-0 grid place-items-center"><span className="grid h-16 w-16 place-items-center rounded-full bg-[#d7ff43] text-black shadow-[0_0_0_12px_rgba(215,255,67,.08)] transition hover:scale-105"><Play size={21}/></span></button>
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7"><div className="font-display text-5xl uppercase sm:text-7xl" style={{color:featuredMontage.accent}}>{featuredMontage.nickname}</div><div className="mt-2 flex gap-2 text-[10px] uppercase tracking-[.18em] text-white/50"><span>{featuredMontage.hero}</span><span>•</span><span>{featuredMontage.montages.length} cuts</span></div></div>
+              {featuredCut ? <button type="button" onClick={()=>openMember(featuredMontage, featuredMontage.montages.indexOf(featuredCut))} aria-label={`Play ${featuredCut.title}`} className="absolute inset-0 grid place-items-center"><span className="grid h-16 w-16 place-items-center rounded-full bg-[#d7ff43] text-black shadow-[0_0_0_12px_rgba(215,255,67,.08)] transition hover:scale-105"><Play size={21}/></span></button> : <div className="absolute inset-0 grid place-items-center"><span className="border border-white/15 bg-black/50 px-4 py-2 text-[10px] font-black uppercase tracking-[.2em] text-white/60 backdrop-blur-sm">No public cut yet</span></div>}
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7"><div className="font-display text-5xl uppercase sm:text-7xl" style={{color:featuredMontage.accent}}>{featuredMontage.nickname}</div><div className="mt-2 flex gap-2 text-[10px] uppercase tracking-[.18em] text-white/50"><span>{featuredMontage.hero}</span><span>•</span><span>{featuredCutCount} public cuts</span></div></div>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">{featuredMontage.montages.slice(0, 2).map((m, idx)=><button key={m.title} onClick={()=>openMember(featuredMontage, idx)} className="border border-white/8 p-4 text-left hover:border-white/18"><div className="flex items-center gap-3"><div className="relative h-12 w-20 shrink-0 overflow-hidden border border-white/10 bg-black">{youtubeThumbnail(m.youtubeId) ? <Image src={youtubeThumbnail(m.youtubeId)} alt="" fill sizes="80px" className="object-cover" /> : <div className="grid h-full w-full place-items-center text-white/20"><Play size={14}/></div>}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><span className="text-[10px] uppercase tracking-[.18em] text-white/30">0{idx+1}</span><span className="text-[10px] text-white/25">{m.duration}</span></div><div className="mt-2 truncate text-sm font-semibold">{m.title}</div><div className="mt-1 text-xs text-white/35">{m.hero}</div></div></div></button>)}</div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">{featuredCutCount > 0 ? featuredMontage.montages.filter((m) => normalizeYoutubeId(m.youtubeId)).slice(0, 2).map((m, idx)=><button type="button" key={m.title} onClick={()=>openMember(featuredMontage, featuredMontage.montages.indexOf(m))} className="border border-white/8 p-4 text-left hover:border-white/18"><div className="flex items-center gap-3"><div className="relative h-12 w-20 shrink-0 overflow-hidden border border-white/10 bg-black"><Image src={youtubeThumbnail(m.youtubeId)} alt="" fill sizes="80px" className="object-cover" /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><span className="text-[10px] uppercase tracking-[.18em] text-white/30">0{idx+1}</span><span className="text-[10px] text-white/25">{m.duration}</span></div><div className="mt-2 truncate text-sm font-semibold">{m.title}</div><div className="mt-1 text-xs text-white/35">{m.hero}</div></div></div></button>) : <div className="border border-white/8 bg-white/[.02] p-4 text-sm leading-6 text-white/35 sm:col-span-2">No public cuts are published yet. Add a valid YouTube video in Content Studio to enable playback here.</div>}</div>
           </div>
         </div>
       </section>
@@ -116,6 +118,7 @@ export default function HomeContent({ content }: { content: ContentSnapshot }) {
 }
 
 function MemberCard({ member, index, onOpen }: { member: Member; index: number; onOpen: (m: Member, montageIndex?: number) => void }) {
+  const playableCount = member.montages.filter((montage) => Boolean(normalizeYoutubeId(montage.youtubeId))).length;
   return (
     <button
       type="button"
@@ -147,7 +150,7 @@ function MemberCard({ member, index, onOpen }: { member: Member; index: number; 
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/15 bg-black/30 text-white/70 backdrop-blur-sm transition group-hover:border-white/40 group-hover:text-white">↗</span>
         </div>
         <div className="mt-5 flex items-center justify-between border-t border-white/12 pt-3 font-mono text-[9px] uppercase tracking-[.17em] text-white/40">
-          <span>{member.montages.length} cuts</span><span>Open profile</span>
+          <span>{playableCount > 0 ? `${playableCount} public cuts` : 'No public cuts'}</span><span>Open profile</span>
         </div>
       </div>
     </button>
