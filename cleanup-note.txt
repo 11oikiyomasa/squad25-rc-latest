@@ -1,0 +1,1 @@
+Temporary transfer staging will be discarded when final source is imported.
