@@ -2,8 +2,25 @@ import { NextResponse } from 'next/server';
 import { getSquadContent } from '@/lib/content';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
+const MEDIA_BUCKET = 'squad-media';
+const PUBLIC_OBJECT_MARKER = `/storage/v1/object/public/${MEDIA_BUCKET}/`;
+
 function slug(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70);
+}
+
+function storagePathFromPublicUrl(value: string): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const markerIndex = url.pathname.indexOf(PUBLIC_OBJECT_MARKER);
+    if (markerIndex < 0) return null;
+    const path = decodeURIComponent(url.pathname.slice(markerIndex + PUBLIC_OBJECT_MARKER.length)).replace(/^\/+|\/+$/g, '');
+    if (!path || path.split('/').some((segment) => segment === '..')) return null;
+    return path;
+  } catch {
+    return null;
+  }
 }
 
 async function ensureAdmin() {
@@ -87,6 +104,11 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'One or more member fields are invalid.' }, { status: 422 });
   }
 
+  const previous = await getSquadContent();
+  const previousPhotoPaths = new Set(
+    previous.members.map((member) => storagePathFromPublicUrl(member.photo)).filter((path): path is string => Boolean(path)),
+  );
+
   const { data: result, error: publishError } = await client.rpc('publish_squad_content', {
     payload: { profile: profilePayload, members: normalizedMembers },
   });
@@ -96,5 +118,14 @@ export async function PUT(request: Request) {
   }
 
   const response = await getSquadContent();
+  const currentPhotoPaths = new Set(
+    response.members.map((member) => storagePathFromPublicUrl(member.photo)).filter((path): path is string => Boolean(path)),
+  );
+  const stalePhotoPaths = [...previousPhotoPaths].filter((path) => !currentPhotoPaths.has(path));
+  if (stalePhotoPaths.length) {
+    const { error: cleanupError } = await client.storage.from(MEDIA_BUCKET).remove(stalePhotoPaths);
+    if (cleanupError) console.warn('Storage cleanup skipped:', cleanupError.message);
+  }
+
   return NextResponse.json({ ...response, ...(result as Record<string, unknown>), profileKey: slug(profilePayload.name) }, { headers: { 'Cache-Control': 'private, no-store' } });
 }
