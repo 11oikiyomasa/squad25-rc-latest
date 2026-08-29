@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const requiredFiles = [
+  'app/loading.tsx',
   'app/scrims/page.tsx',
   'components/scrims-content.tsx',
   'lib/scrims.ts',
@@ -17,6 +18,7 @@ for (const file of requiredFiles) {
   if (!fs.existsSync(full)) throw new Error(`Missing scrim artifact: ${file}`);
 }
 
+const loading = fs.readFileSync(path.join(root, 'app/loading.tsx'), 'utf8');
 const publicPage = fs.readFileSync(path.join(root, 'app/scrims/page.tsx'), 'utf8');
 const publicContent = fs.readFileSync(path.join(root, 'components/scrims-content.tsx'), 'utf8');
 const adminApi = fs.readFileSync(path.join(root, 'app/api/admin/scrims/route.ts'), 'utf8');
@@ -25,6 +27,7 @@ const control = fs.readFileSync(path.join(root, 'components/scrim-control.tsx'),
 const sitemap = fs.readFileSync(path.join(root, 'app/sitemap.ts'), 'utf8');
 
 for (const [label, source, needles] of [
+  ['loading screen', loading, ['SQUAD.25', 'Public squad archive', 'loading-sweep']],
   ['public page', publicPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/scrims'"]],
   ['public UI', publicContent, ['upcoming', 'COMPLETED', 'No public scrims scheduled']],
   ['admin API', adminApi, ['ensureAdmin', 'POST', 'PATCH', 'DELETE']],
