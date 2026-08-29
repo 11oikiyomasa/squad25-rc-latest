@@ -31,3 +31,22 @@ jobs:
         run: npm run typecheck
       - name: Production build
         run: npm run build
+      - name: Start production server
+        run: |
+          nohup npm start -- --hostname 127.0.0.1 --port 3000 > /tmp/squad25-server.log 2>&1 &
+          echo $! > /tmp/squad25-server.pid
+      - name: Smoke test routes
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000/ >/dev/null
+          curl -fsS http://127.0.0.1:3000/member/ryuu >/dev/null
+          curl -fsS http://127.0.0.1:3000/login >/dev/null
+          status=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/health)
+          case "$status" in 200|503) ;; *) echo "Unexpected /api/health status: $status"; cat /tmp/squad25-server.log; exit 1;; esac
+      - name: Stop production server
+        if: always()
+        run: |
+          if [ -f /tmp/squad25-server.pid ]; then kill "$(cat /tmp/squad25-server.pid)" 2>/dev/null || true; fi
