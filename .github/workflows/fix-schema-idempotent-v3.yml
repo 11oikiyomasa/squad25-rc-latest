@@ -1,0 +1,51 @@
+name: Fix Supabase schema idempotency v3
+
+on:
+  push:
+    branches: [fix-schema-idempotent-v3-20260829]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Normalize policy drops
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          p = Path('SUPABASE_SCHEMA.sql')
+          text = p.read_text()
+          text = re.sub(r'^drop policy if exists "[^"]+" on [^;]+;\n', '', text, flags=re.I|re.M)
+          out = []
+          created = []
+          for line in text.splitlines():
+              m = re.match(r'^create policy "([^"]+)" on ([^\s;]+)(.*)$', line, re.I)
+              if m:
+                  name, table, _ = m.groups()
+                  out.append(f'drop policy if exists "{name}" on {table};')
+                  created.append((name, table))
+              out.append(line)
+          fixed = '\n'.join(out) + '\n'
+          creates = re.findall(r'^create policy "([^"]+)" on ([^\s;]+)', fixed, re.I|re.M)
+          drops = re.findall(r'^drop policy if exists "([^"]+)" on ([^\s;]+);$', fixed, re.I|re.M)
+          if 'create policy if not exists' in fixed.lower(): raise SystemExit('Invalid CREATE POLICY IF NOT EXISTS remains')
+          if len(creates) != 25 or len(drops) != 25: raise SystemExit(f'Expected 25/25 policy statements, got {len(creates)}/{len(drops)}')
+          if sorted(creates) != sorted(drops): raise SystemExit('DROP/CREATE policy pairs do not match')
+          p.write_text(fixed)
+          print('Validated 25 CREATE + 25 DROP policy pairs')
+          PY
+      - name: Verify and commit
+        run: |
+          test "$(grep -Eic '^create policy ' SUPABASE_SCHEMA.sql)" -eq 25
+          test "$(grep -Eic '^drop policy if exists ' SUPABASE_SCHEMA.sql)" -eq 25
+          ! grep -qi 'create policy if not exists' SUPABASE_SCHEMA.sql
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add SUPABASE_SCHEMA.sql
+          git rm .github/workflows/fix-schema-idempotent-v3.yml
+          git commit -m 'Make Supabase schema fully idempotent'
+          git push
