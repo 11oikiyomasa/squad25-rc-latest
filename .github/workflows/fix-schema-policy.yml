@@ -1,0 +1,50 @@
+name: Fix schema policy syntax
+
+on:
+  push:
+    branches: [fix-schema-policy-20260829]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rewrite CREATE POLICY syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          p = Path('SUPABASE_SCHEMA.sql')
+          text = p.read_text()
+          rx = re.compile(r'^create policy if not exists ("[^"]+") on (.+)$', re.I)
+          out = []
+          changed = 0
+          for line in text.splitlines():
+              m = rx.match(line)
+              if m:
+                  out.append(f'drop policy if exists {m.group(1)} on {m.group(2)};')
+                  out.append(f'create policy {m.group(1)} on {m.group(2)};')
+                  changed += 1
+              else:
+                  out.append(line)
+          fixed = '\n'.join(out) + '\n'
+          if 'create policy if not exists' in fixed.lower():
+              raise SystemExit('Invalid CREATE POLICY syntax remains')
+          if changed != 15:
+              raise SystemExit(f'Expected 15 policy rewrites, got {changed}')
+          p.write_text(fixed)
+          print(f'Rewrote {changed} policies')
+          PY
+      - name: Verify and commit
+        run: |
+          test $(grep -ic '^create policy' SUPABASE_SCHEMA.sql) -eq 15
+          ! grep -qi 'create policy if not exists' SUPABASE_SCHEMA.sql
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/fix-schema-policy.yml
+          git add SUPABASE_SCHEMA.sql
+          git commit -m 'Fix Supabase schema policy syntax'
+          git push
