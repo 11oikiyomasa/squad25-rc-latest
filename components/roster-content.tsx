@@ -70,7 +70,7 @@ export default function RosterContent({ content }: { content: ContentSnapshot })
 function RosterCard({ member, index, onOpen }: { member: Member; index: number; onOpen: (member: Member) => void }) {
   const cuts = publicCuts(member);
   return (
-    <button type="button" onClick={() => onOpen(member)} aria-label={`Open ${member.nickname} profile`} className="group relative min-h-[390px] overflow-hidden border border-white/10 bg-[#101216] text-left">
+    <button type="button" onClick={() => onOpen(member)} aria-label={`Open ${member.nickname} profile`} className="group relative aspect-[16/9] min-h-0 overflow-hidden border border-white/10 bg-[#101216] text-left">
       <Image src={member.photo} alt={`${member.nickname} profile`} fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw" className="object-cover transition duration-700 ease-out group-hover:scale-[1.04]" priority={index < 3} />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
       <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(145deg, ${member.accent}18, transparent 38%)` }} />
