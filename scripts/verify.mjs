@@ -67,7 +67,7 @@ assert(read('SUPABASE_SCHEMA.sql').includes('accent text not null'), 'Member acc
 assert(read('SUPABASE_SCHEMA.sql').includes('duration text not null'), 'Montage duration column is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.squad_settings'), 'Squad settings SQL model is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.gallery_items'), 'Gallery SQL model is missing');
-assert(read('SUPABASE_SCHEMA.sql').includes('create policy "admin update members"'), 'Admin RLS update policy is missing');
+assert(/create policy "[^"]+" on public\.members for all using \(private\.is_admin\(\)\) with check \(private\.is_admin\(\)\)/i.test(read('SUPABASE_SCHEMA.sql')), 'Admin RLS policy for member management is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes("bucket_id = 'squad-media'"), 'Storage policy/bucket is missing');
 assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828010000_align_content_schema.sql')), 'Schema alignment migration is missing');
 assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828011000_remove_unused_montage_index.sql')), 'Index cleanup migration is missing');
