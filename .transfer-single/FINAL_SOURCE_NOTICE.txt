@@ -1,0 +1,1 @@
+This staging directory is temporary. Do not deploy it. The import workflow replaces the repository root with the SQUAD.25 final source after checksum verification.
