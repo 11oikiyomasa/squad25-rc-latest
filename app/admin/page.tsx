@@ -1,12 +1,21 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import AdminStudio from '@/components/admin-studio';
 import { requireAdmin } from '@/lib/admin-auth';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Content Studio — SQUAD.25',
   robots: { index: false, follow: false },
 };
 
 export default async function AdminPage() {
   await requireAdmin();
-  return <AdminStudio />;
+  return (
+    <>
+      <AdminStudio />
+      <div className="fixed bottom-5 right-5 z-50">
+        <Link href="/admin/recruitment" className="inline-flex items-center gap-2 border border-[#d7ff43]/30 bg-[#101216]/95 px-4 py-3 text-[9px] font-black uppercase tracking-[.16em] text-[#d7ff43] shadow-xl backdrop-blur-md hover:border-[#d7ff43]/60">Recruitment Inbox <span aria-hidden>↗</span></Link>
+      </div>
+    </>
+  );
 }

@@ -90,6 +90,9 @@ const globalCss = read('app/globals.css');
 assert(globalCss.includes('var(--font-display)') && globalCss.includes('prefers-reduced-motion'), 'Typography/accessibility hardening missing');
 assert(globalCss.includes('scroll-padding-top: 5rem'), 'Sticky-header anchor offset is missing');
 assert(read('supabase/migrations/20260829030000_atomic_admin_publish.sql').includes('publish_squad_content'), 'Atomic publish migration is missing');
+const seoFiles = [read('app/layout.tsx'), read('app/robots.ts'), read('app/sitemap.ts'), read('.env.example')].join('\n');
+assert(!seoFiles.includes('andregsman.eu.org'), 'Deprecated custom domain still referenced by active SEO configuration');
+assert(seoFiles.includes('squad25-rc-latest.vercel.app'), 'Vercel canonical URL is missing from active SEO configuration');
 if (failures.length) {
   console.error('VERIFY: FAIL');
   for (const failure of failures) console.error(`- ${failure}`);
@@ -103,3 +106,4 @@ console.log(`- Gallery assets: ${galleryAssets.length}`);
 console.log(`- TS/TSX syntax: ${sourceFiles.length} files parsed`);
 console.log('- Auth/API/schema: present');
 console.log('- Routes/config: present');
+console.log('- SEO canonical: Vercel');
