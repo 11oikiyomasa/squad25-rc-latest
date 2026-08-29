@@ -25,6 +25,7 @@ const names = namesMatch ? [...namesMatch[1].matchAll(/\['([A-Z0-9]+)'\s*,/g)].m
 assert(names.length === 25, `Expected 25 seed members, found ${names.length}`);
 assert(new Set(names).size === names.length, 'Duplicate member nickname found in seed data');
 assert(squad.includes('normalizeYoutubeId'), 'YouTube URL normalization helper is missing');
+assert(squad.includes("const accents = ['#d7ff43', '#ff6b38'];"), 'Seed accent palette drifted from the public lime/ember palette');
 assert(fs.existsSync(path.join(root, 'app', 'member', '[id]', 'page.tsx')), 'Member dynamic route is missing');
 assert(fs.existsSync(path.join(root, 'app', 'admin', 'page.tsx')), 'Admin route is missing');
 assert(fs.existsSync(path.join(root, 'app', 'admin', 'preview', 'page.tsx')), 'Admin draft preview route is missing');
@@ -79,10 +80,15 @@ assert(!read('supabase/migrations/20260829030000_atomic_admin_publish.sql').incl
 assert(!read('SUPABASE_SCHEMA.sql').includes('public.is_admin()'), 'Exposed public admin authorization helper remains');
 const publicSource = read('components/member-modal.tsx');
 const memberPageSource = read('app/member/[id]/page.tsx');
+const homeSource = read('components/home-content.tsx');
 assert(!publicSource.includes('Montage slot ready') && !publicSource.includes('data/squad.ts'), 'Public modal contains developer/debug text');
 assert(!memberPageSource.includes('Tambahkan URL YouTube dari Content Studio'), 'Public member page contains admin instruction');
+assert(memberPageSource.includes('cuts public') && memberPageSource.includes('publishedCuts.length'), 'Public member page is counting unpublished montage placeholders');
+assert(!homeSource.includes('{member.montages.length} cuts'), 'Roster cards still count unpublished montage placeholders');
+assert(homeSource.includes('No public cuts'), 'Homepage lacks an explicit empty state for unpublished montage content');
 const globalCss = read('app/globals.css');
 assert(globalCss.includes('var(--font-display)') && globalCss.includes('prefers-reduced-motion'), 'Typography/accessibility hardening missing');
+assert(globalCss.includes('scroll-padding-top: 5rem'), 'Sticky-header anchor offset is missing');
 assert(read('supabase/migrations/20260829030000_atomic_admin_publish.sql').includes('publish_squad_content'), 'Atomic publish migration is missing');
 if (failures.length) {
   console.error('VERIFY: FAIL');
