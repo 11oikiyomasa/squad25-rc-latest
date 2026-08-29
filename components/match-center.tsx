@@ -4,11 +4,11 @@ import Link from 'next/link';
 import type { Scrim } from '@/lib/scrims';
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short' }).format(new Date(value));
+  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' }).format(new Date(value));
 }
 
 function formatTime(value: string) {
-  return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value));
+  return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).format(new Date(value));
 }
 
 function outcome(scrim: Scrim) {
@@ -18,7 +18,12 @@ function outcome(scrim: Scrim) {
 }
 
 export default function MatchCenter({ scrims }: { scrims: Scrim[] }) {
-  const upcoming = scrims.filter((scrim) => scrim.status === 'LIVE' || scrim.status === 'SCHEDULED').sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+  const now = Date.now();
+  const upcoming = scrims.filter((scrim) => scrim.status === 'LIVE' || (scrim.status === 'SCHEDULED' && new Date(scrim.scheduled_at).getTime() >= now)).sort((a, b) => {
+    if (a.status === 'LIVE' && b.status !== 'LIVE') return -1;
+    if (b.status === 'LIVE' && a.status !== 'LIVE') return 1;
+    return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime();
+  });
   const next = upcoming[0] ?? null;
   const results = scrims.filter((scrim) => scrim.status === 'COMPLETED' && scrim.result_for !== null && scrim.result_against !== null).sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
   const wins = results.filter((scrim) => outcome(scrim) === 'WIN').length;
@@ -48,7 +53,7 @@ export default function MatchCenter({ scrims }: { scrims: Scrim[] }) {
                 <div className="border border-[#d7ff43]/20 bg-[#d7ff43]/[.05] px-4 py-3 text-center"><div className="font-mono text-[9px] uppercase tracking-[.18em] text-[#d7ff43]">{next.status === 'LIVE' ? 'LIVE' : 'LOCKED'}</div><div className="mt-1 font-display text-4xl text-[#d7ff43]">{formatTime(next.scheduled_at)}</div></div>
               </div>
             ) : (
-              <div className="flex min-h-52 items-center justify-between gap-5"><div><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/25">No next match</div><div className="mt-3 font-display text-4xl uppercase">Schedule is open.</div><p className="mt-3 max-w-xl text-sm leading-6 text-white/40">No public scrim has been locked. The match center will update when one is published.</p></div></div>
+              <div className="flex min-h-52 items-center gap-5"><div><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/25">No next match</div><div className="mt-3 font-display text-4xl uppercase">Schedule is open.</div><p className="mt-3 max-w-xl text-sm leading-6 text-white/40">No public scrim has been locked. The match center will update when one is published.</p></div></div>
             )}
           </div>
 
