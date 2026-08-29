@@ -46,7 +46,9 @@ export default function RosterContent({ content }: { content: ContentSnapshot })
 
       <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-14">
         <div className="flex flex-col gap-4 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2">{filters.map((item) => <button type="button" key={item} onClick={() => setFilter(item)} className={`border px-3 py-2 text-[10px] font-semibold uppercase tracking-[.16em] transition ${filter === item ? 'border-[#d7ff43] bg-[#d7ff43] text-black' : 'border-white/10 text-white/45 hover:text-white'}`}>{item}</button>)}</div>
+          <div className="-mx-5 overflow-x-auto px-5 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+            <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">{filters.map((item) => <button type="button" key={item} onClick={() => setFilter(item)} className={`shrink-0 border px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[.16em] transition ${filter === item ? 'border-[#d7ff43] bg-[#d7ff43] text-black' : 'border-white/10 text-white/45 hover:text-white'}`}>{item}</button>)}</div>
+          </div>
           <label className="flex w-full min-w-0 items-center gap-2 border border-white/10 px-3 py-3 text-white/35 lg:max-w-sm" aria-label="Search roster"><Search size={15}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search player, hero, role" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25" /></label>
         </div>
 
