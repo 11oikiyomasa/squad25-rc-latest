@@ -21,12 +21,12 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           p = Path('scripts/verify.mjs')
-          text = p.read_text()
-          old = "assert(read('SUPABASE_SCHEMA.sql').includes('create policy \\\"admin update members\\\"'), 'Admin RLS update policy is missing');"
-          new = "assert(/create policy \\\"[^\\\"]+\\\" on public\\.members for all using \\\\(private\\.is_admin\\\\(\\\\)\\\\) with check \\\\(private\\.is_admin\\\\(\\\\)\\\\)/i.test(read('SUPABASE_SCHEMA.sql')), 'Admin RLS policy for member management is missing');"
-          if text.count(old) != 1:
-              raise SystemExit('Expected brittle RLS assertion exactly once')
-          p.write_text(text.replace(old, new, 1))
+          lines = p.read_text().splitlines()
+          hits = [i for i, line in enumerate(lines) if 'Admin RLS update policy is missing' in line]
+          if len(hits) != 1:
+              raise SystemExit(f'Expected exactly one brittle RLS assertion, found {len(hits)}')
+          lines[hits[0]] = r'''assert(/create policy "[^"]+" on public\.members for all using \(private\.is_admin\(\)\) with check \(private\.is_admin\(\)\)/i.test(read('SUPABASE_SCHEMA.sql')), 'Admin RLS policy for member management is missing');'''
+          p.write_text('\n'.join(lines) + '\n')
           PY
       - name: Install dependencies
         run: npm ci
