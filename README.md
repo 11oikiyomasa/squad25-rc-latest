@@ -73,3 +73,5 @@ After configuring Supabase, `GET /api/health` verifies the database connection, 
 ## Release verification
 
 Production-readiness is verified in CI against the GitHub `main` branch. Vercel should be connected to this repository with `main` as the production branch so every validated push can produce a production deployment.
+
+Vercel Git auto-deployment is explicitly enabled in `vercel.json`.
