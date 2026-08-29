@@ -29,6 +29,8 @@ assert(squad.includes("const accents = ['#d7ff43', '#ff6b38'];"), 'Seed accent p
 assert(fs.existsSync(path.join(root, 'app', 'member', '[id]', 'page.tsx')), 'Member dynamic route is missing');
 assert(fs.existsSync(path.join(root, 'app', 'admin', 'page.tsx')), 'Admin route is missing');
 assert(fs.existsSync(path.join(root, 'app', 'admin', 'preview', 'page.tsx')), 'Admin draft preview route is missing');
+assert(fs.existsSync(path.join(root, 'app', 'roster', 'page.tsx')), 'Full roster route is missing');
+assert(fs.existsSync(path.join(root, 'components', 'roster-content.tsx')), 'Roster content component is missing');
 for (const name of names) {
   const asset = path.join(root, 'public', 'images', 'members', `${name.toLowerCase()}.svg`);
   assert(fs.existsSync(asset), `Missing member asset: ${path.relative(root, asset)}`);
@@ -81,11 +83,16 @@ assert(!read('SUPABASE_SCHEMA.sql').includes('public.is_admin()'), 'Exposed publ
 const publicSource = read('components/member-modal.tsx');
 const memberPageSource = read('app/member/[id]/page.tsx');
 const homeSource = read('components/home-content.tsx');
+const landingSource = read('components/home-landing.tsx');
+const pageSource = read('app/page.tsx');
 assert(!publicSource.includes('Montage slot ready') && !publicSource.includes('data/squad.ts'), 'Public modal contains developer/debug text');
 assert(!memberPageSource.includes('Tambahkan URL YouTube dari Content Studio'), 'Public member page contains admin instruction');
 assert(memberPageSource.includes('cuts public') && memberPageSource.includes('publishedCuts.length'), 'Public member page is counting unpublished montage placeholders');
-assert(!homeSource.includes('{member.montages.length} cuts'), 'Roster cards still count unpublished montage placeholders');
-assert(homeSource.includes('No public cuts'), 'Homepage lacks an explicit empty state for unpublished montage content');
+assert(!homeSource.includes('{member.montages.length} cuts'), 'Legacy roster cards still count unpublished montage placeholders');
+assert(homeSource.includes('No public cuts'), 'Legacy roster component lacks an explicit empty state for unpublished montage content');
+assert(landingSource.includes('members.slice(0, 6)'), 'Curated homepage must cap featured roster at six players');
+assert(pageSource.includes("HomeLanding") && !pageSource.includes("HomeContent"), 'Homepage is still wired to the legacy roster-heavy component');
+assert(read('app/sitemap.ts').includes(`${'/roster'}`) && read('app/sitemap.ts').includes(`${'/recruitment'}`), 'Sitemap is missing roster or recruitment routes');
 const globalCss = read('app/globals.css');
 assert(globalCss.includes('var(--font-display)') && globalCss.includes('prefers-reduced-motion'), 'Typography/accessibility hardening missing');
 assert(globalCss.includes('scroll-padding-top: 5rem'), 'Sticky-header anchor offset is missing');
@@ -106,4 +113,5 @@ console.log(`- Gallery assets: ${galleryAssets.length}`);
 console.log(`- TS/TSX syntax: ${sourceFiles.length} files parsed`);
 console.log('- Auth/API/schema: present');
 console.log('- Routes/config: present');
+console.log('- Curated homepage roster: 6 max');
 console.log('- SEO canonical: Vercel');
