@@ -25,7 +25,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Verify source
+      - name: Verify source and agent contract
         run: npm run verify
       - name: Typecheck
         run: npm run typecheck
@@ -35,15 +35,16 @@ jobs:
         run: |
           nohup npm start -- --hostname 127.0.0.1 --port 3000 > /tmp/squad25-server.log 2>&1 &
           echo $! > /tmp/squad25-server.pid
-      - name: Smoke test routes
+      - name: Smoke test public routes
         run: |
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3000/ >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:3000/ >/dev/null
-          curl -fsS http://127.0.0.1:3000/member/ryuu >/dev/null
-          curl -fsS http://127.0.0.1:3000/login >/dev/null
+          for route in / /roster /scrims /recruitment /member/ryuu /login; do
+            echo "Checking $route"
+            curl -fsS "http://127.0.0.1:3000$route" >/dev/null
+          done
           status=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/health)
           case "$status" in 200|503) ;; *) echo "Unexpected /api/health status: $status"; cat /tmp/squad25-server.log; exit 1;; esac
       - name: Stop production server
