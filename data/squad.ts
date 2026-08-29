@@ -40,7 +40,7 @@ export type GalleryItem = {
 };
 
 export const squadProfile = {
-  name: 'SQUAD.25',
+  name: 'No Flaws',
   tagline: 'Twenty-five players. One comms line.',
   season: '2026',
   instagram: '#',
@@ -72,7 +72,7 @@ const names = [
 ] as const;
 
 const heroes = ['Yu Zhong', 'Ling', 'Yve', 'Beatrix', 'Chou', 'Paquito', 'Fanny', 'Pharsa', 'Claude', 'Khufra'];
-const accents = ['#d7ff43', '#ff6b38', '#8cb4ff', '#d98cff', '#5fe8c6'];
+const accents = ['#d7ff43', '#ff6b38'];
 
 export const members: Member[] = names.map(([nickname, name], index) => {
   const role = roles[index % roles.length];
