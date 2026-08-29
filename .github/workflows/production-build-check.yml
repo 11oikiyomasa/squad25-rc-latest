@@ -1,0 +1,23 @@
+name: Production build check
+
+on:
+  push:
+    branches: [ci-production-build-20260829-v1]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify source
+        run: npm run verify
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
