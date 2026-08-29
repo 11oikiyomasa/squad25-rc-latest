@@ -1,9 +1,10 @@
 import type { MetadataRoute } from 'next';
 
+const siteUrl = 'https://squad25-rc-latest.vercel.app';
+
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://squad25-rc-latest.vercel.app';
   return {
     rules: { userAgent: '*', allow: '/' },
-    sitemap: `${base.replace(/\/$/, '')}/sitemap.xml`,
+    sitemap: `${siteUrl}/sitemap.xml`,
   };
 }
