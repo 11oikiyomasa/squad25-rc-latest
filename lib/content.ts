@@ -14,6 +14,12 @@ type ProfileRow = { id: number; name: string; tagline: string; season: string; i
 type GalleryRow = { id: string; title: string; caption: string; image_url: string; sort_order: number };
 type AchievementRow = { year: number | null; title: string; description: string; };
 
+function normalizeAccent(role: Member['role'], value: string): string {
+  const accent = value.trim().toLowerCase();
+  if (accent === '#d7ff43' || accent === '#ff6b38') return accent;
+  return role === 'JUNGLE' || role === 'GOLD' ? '#ff6b38' : '#d7ff43';
+}
+
 export async function getSquadContent(): Promise<ContentSnapshot> {
   if (!isSupabaseConfigured()) return { profile: squadProfile, members: seedMembers, achievements: seedAchievements, gallery: seedGallery };
 
@@ -43,7 +49,7 @@ export async function getSquadContent(): Promise<ContentSnapshot> {
     }
     const members: Member[] = (memberRows as unknown as MemberRow[]).map((row) => ({
       id: row.slug, number: row.number, nickname: row.nickname, name: row.full_name ?? row.nickname, role: row.role, hero: row.main_hero ?? '', status: row.status,
-      bio: row.bio, accent: row.accent, photo: row.photo_url ?? '',
+      bio: row.bio, accent: normalizeAccent(row.role, row.accent), photo: row.photo_url ?? '',
       montages: (montagesByMember.get(row.id) ?? []).map((m) => ({ title: m.title, hero: m.hero ?? '', duration: m.duration, youtubeId: normalizeYoutubeId(m.youtube_id), description: m.description })),
     }));
 
