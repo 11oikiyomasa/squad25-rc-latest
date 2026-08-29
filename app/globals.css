@@ -49,6 +49,9 @@ button { cursor: pointer; }
 .reveal { animation: reveal .65s ease both; }
 @keyframes reveal { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
 
+.loading-sweep { animation: loading-sweep 1.35s cubic-bezier(.55,.1,.25,1) infinite; transform: translateX(-140%); }
+@keyframes loading-sweep { 0% { transform: translateX(-140%); } 58%, 100% { transform: translateX(430%); } }
+
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: #0a0b0d; }
 ::-webkit-scrollbar-thumb { background: #2a2c30; border-radius: 999px; }
