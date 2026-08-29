@@ -27,6 +27,13 @@ jobs:
         run: npm ci
       - name: Verify source and agent contract
         run: npm run verify
+      - name: Validate AI reviewer runner
+        run: |
+          python3 -m py_compile scripts/ai_pr_review.py
+          test -f .github/workflows/ai-pr-review.yml
+          grep -q 'gpt-5.6-sol' scripts/ai_pr_review.py
+          grep -q 'pull_request_target' .github/workflows/ai-pr-review.yml
+          grep -q 'OPENAI_API_KEY' .github/workflows/ai-pr-review.yml
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
