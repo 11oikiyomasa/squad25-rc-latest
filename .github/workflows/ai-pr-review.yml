@@ -28,7 +28,7 @@ jobs:
 
       - name: Run AI review
         env:
-          AI_REVIEW_PROVIDER: auto
+          AI_REVIEW_PROVIDER: gemini
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
