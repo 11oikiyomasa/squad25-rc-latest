@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101216"/><stop offset="1" stop-color="#8cb4ff" stop-opacity=".32"/></linearGradient>
+<radialGradient id="orb"><stop stop-color="#8cb4ff" stop-opacity=".45"/><stop offset="1" stop-color="#8cb4ff" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="760" height="520" fill="#0a0c0f"/>
+<rect width="760" height="520" fill="url(#bg)"/>
+<circle cx="620" cy="60" r="240" fill="url(#orb)"/>
+<path d="M0 410L240 215L410 365L585 160L760 310V520H0Z" fill="#090b0e" opacity=".76"/>
+<g><circle cx="37" cy="55" r="2" fill="#8cb4ff" opacity="0.2"/><circle cx="120" cy="102" r="3" fill="#8cb4ff" opacity="0.32"/><circle cx="203" cy="149" r="4" fill="#8cb4ff" opacity="0.44"/><circle cx="286" cy="196" r="2" fill="#8cb4ff" opacity="0.56"/><circle cx="369" cy="243" r="3" fill="#8cb4ff" opacity="0.6799999999999999"/><circle cx="452" cy="290" r="4" fill="#8cb4ff" opacity="0.2"/><circle cx="535" cy="337" r="2" fill="#8cb4ff" opacity="0.32"/><circle cx="618" cy="384" r="3" fill="#8cb4ff" opacity="0.44"/><circle cx="81" cy="431" r="4" fill="#8cb4ff" opacity="0.56"/><circle cx="164" cy="478" r="2" fill="#8cb4ff" opacity="0.6799999999999999"/><circle cx="247" cy="525" r="3" fill="#8cb4ff" opacity="0.2"/><circle cx="330" cy="572" r="4" fill="#8cb4ff" opacity="0.32"/><circle cx="413" cy="619" r="2" fill="#8cb4ff" opacity="0.44"/><circle cx="496" cy="666" r="3" fill="#8cb4ff" opacity="0.56"/><circle cx="579" cy="713" r="4" fill="#8cb4ff" opacity="0.6799999999999999"/><circle cx="42" cy="760" r="2" fill="#8cb4ff" opacity="0.2"/></g>
+<path d="M0 120H760M0 180H760M0 240H760M0 300H760M0 360H760M95 0V520M190 0V520M285 0V520M380 0V520M475 0V520M570 0V520M665 0V520" stroke="#fff" stroke-opacity=".055"/>
+<text x="48" y="74" fill="#fff" fill-opacity=".46" font-family="Arial" font-size="18" letter-spacing="5">ARCHIVE / 03</text>
+<text x="48" y="445" fill="#fff" font-family="Arial Black,Arial" font-size="44" letter-spacing="2">AFTER THE WIN</text>
+<text x="48" y="478" fill="#8cb4ff" font-family="Arial" font-size="13" letter-spacing="4">PLACEHOLDER ART — REPLACE WITH REAL PHOTO</text>
+</svg>

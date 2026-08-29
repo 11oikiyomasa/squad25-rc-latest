@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #f4f0e7;
+  --muted: #9a9993;
+  --paper: #0c0d0f;
+  --panel: #121418;
+  --line: rgba(255,255,255,.10);
+  --acid: #d7ff43;
+  --ember: #ff6b38;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+::selection { background: var(--acid); color: #0b0d0a; }
+
+.font-display { font-family: var(--font-display), Arial, sans-serif; font-weight: 750; letter-spacing: -.045em; }
+.font-mono { font-family: var(--font-mono), monospace; }
+:focus-visible { outline: 2px solid var(--acid); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+.noise {
+  position: fixed; inset: 0; pointer-events: none; opacity: .055; z-index: 50;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+}
+
+.grid-bg {
+  background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.hero-slab {
+  background: radial-gradient(circle at 80% 20%, rgba(215,255,67,.13), transparent 0 28%), radial-gradient(circle at 20% 80%, rgba(255,107,56,.10), transparent 0 22%), #0b0c0e;
+}
+
+.member-card { transition: transform .22s ease, border-color .22s ease, background .22s ease; }
+.member-card:hover { transform: translateY(-5px); border-color: rgba(215,255,67,.36); background: #17191d; }
+
+.marquee { animation: scroll 26s linear infinite; }
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+.reveal { animation: reveal .65s ease both; }
+@keyframes reveal { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #0a0b0d; }
+::-webkit-scrollbar-thumb { background: #2a2c30; border-radius: 999px; }
+
+@media (max-width: 640px) {
+  .grid-bg { background-size: 28px 28px; }
+}

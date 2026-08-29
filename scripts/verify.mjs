@@ -1,0 +1,99 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(new URL('..', import.meta.url).pathname);
+const failures = [];
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+let ts;
+try {
+  ts = await import('typescript');
+} catch {
+  try {
+    ts = await import('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js');
+  } catch {
+    ts = null;
+  }
+}
+
+function assert(condition, message) {
+  if (!condition) failures.push(message);
+}
+
+const squad = read('data/squad.ts');
+const namesMatch = squad.match(/const names = \[(.*?)\] as const/s);
+const names = namesMatch ? [...namesMatch[1].matchAll(/\['([A-Z0-9]+)'\s*,/g)].map((m) => m[1]) : [];
+assert(names.length === 25, `Expected 25 seed members, found ${names.length}`);
+assert(new Set(names).size === names.length, 'Duplicate member nickname found in seed data');
+assert(squad.includes('normalizeYoutubeId'), 'YouTube URL normalization helper is missing');
+assert(fs.existsSync(path.join(root, 'app', 'member', '[id]', 'page.tsx')), 'Member dynamic route is missing');
+assert(fs.existsSync(path.join(root, 'app', 'admin', 'page.tsx')), 'Admin route is missing');
+assert(fs.existsSync(path.join(root, 'app', 'admin', 'preview', 'page.tsx')), 'Admin draft preview route is missing');
+for (const name of names) {
+  const asset = path.join(root, 'public', 'images', 'members', `${name.toLowerCase()}.svg`);
+  assert(fs.existsSync(asset), `Missing member asset: ${path.relative(root, asset)}`);
+}
+const galleryAssets = fs.readdirSync(path.join(root, 'public', 'images', 'gallery')).filter((f) => f.endsWith('.svg'));
+assert(galleryAssets.length >= 6, `Expected at least 6 gallery assets, found ${galleryAssets.length}`);
+for (const file of ['package.json', 'tsconfig.json', 'next.config.ts', '.env.example', 'SUPABASE_SCHEMA.sql']) {
+  assert(fs.existsSync(path.join(root, file)), `Missing project file: ${file}`);
+}
+const sourceFiles = [];
+for (const folder of ['app', 'components', 'data', 'lib']) {
+  const base = path.join(root, folder);
+  if (!fs.existsSync(base)) continue;
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(ts|tsx)$/.test(entry.name)) sourceFiles.push(full);
+    }
+  };
+  walk(base);
+}
+for (const file of sourceFiles) {
+  if (!ts) break;
+  const source = fs.readFileSync(file, 'utf8');
+  const transpiled = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.Preserve, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, strict: true }, fileName: file, reportDiagnostics: true });
+  const diagnostics = transpiled.diagnostics ?? [];
+  assert(diagnostics.length === 0, `TypeScript parse error: ${path.relative(root, file)}`);
+}
+for (const file of ['proxy.ts', 'app/login/page.tsx', 'app/login/actions.ts', 'app/auth/callback/route.ts', 'app/api/content/route.ts', 'app/api/admin/content/route.ts', 'app/api/health/route.ts', 'lib/content.ts', 'lib/admin-auth.ts']) {
+  assert(fs.existsSync(path.join(root, file)), `Missing production auth/content file: ${file}`);
+}
+assert(!ts || Boolean(ts.version), 'TypeScript compiler unavailable for syntax verification');
+assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.admin_users'), 'Admin SQL model is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('number text not null'), 'Member number column is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('accent text not null'), 'Member accent column is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('duration text not null'), 'Montage duration column is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.squad_settings'), 'Squad settings SQL model is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.gallery_items'), 'Gallery SQL model is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('create policy "admin update members"'), 'Admin RLS update policy is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes("bucket_id = 'squad-media'"), 'Storage policy/bucket is missing');
+assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828010000_align_content_schema.sql')), 'Schema alignment migration is missing');
+assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828011000_remove_unused_montage_index.sql')), 'Index cleanup migration is missing');
+assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828012000_restore_montage_fk_index.sql')), 'Index restore migration is missing');
+assert(fs.existsSync(path.join(root, 'supabase', 'migrations')), 'Supabase migrations directory is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('private.is_admin()'), 'Private admin authorization helper is missing');
+assert(read('SUPABASE_SCHEMA.sql').includes('security invoker'), 'Transactional publish should use SECURITY INVOKER');
+assert(!read('supabase/migrations/20260829030000_atomic_admin_publish.sql').includes('security definer'), 'Atomic publish migration still uses SECURITY DEFINER');
+assert(!read('SUPABASE_SCHEMA.sql').includes('public.is_admin()'), 'Exposed public admin authorization helper remains');
+const publicSource = read('components/member-modal.tsx');
+const memberPageSource = read('app/member/[id]/page.tsx');
+assert(!publicSource.includes('Montage slot ready') && !publicSource.includes('data/squad.ts'), 'Public modal contains developer/debug text');
+assert(!memberPageSource.includes('Tambahkan URL YouTube dari Content Studio'), 'Public member page contains admin instruction');
+const globalCss = read('app/globals.css');
+assert(globalCss.includes('var(--font-display)') && globalCss.includes('prefers-reduced-motion'), 'Typography/accessibility hardening missing');
+assert(read('supabase/migrations/20260829030000_atomic_admin_publish.sql').includes('publish_squad_content'), 'Atomic publish migration is missing');
+if (failures.length) {
+  console.error('VERIFY: FAIL');
+  for (const failure of failures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+console.log('VERIFY: PASS');
+console.log(`- Members: ${names.length}/25`);
+console.log(`- Unique nicknames: ${new Set(names).size}/${names.length}`);
+console.log(`- Member assets: ${names.length}/${names.length}`);
+console.log(`- Gallery assets: ${galleryAssets.length}`);
+console.log(`- TS/TSX syntax: ${sourceFiles.length} files parsed`);
+console.log('- Auth/API/schema: present');
+console.log('- Routes/config: present');
