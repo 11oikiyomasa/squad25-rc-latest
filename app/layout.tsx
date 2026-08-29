@@ -6,7 +6,7 @@ const display = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', 
 const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-mono', display: 'swap' });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://squad25-rc-latest.vercel.app';
+const siteUrl = 'https://squad25-rc-latest.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
