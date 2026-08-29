@@ -1,3 +1,0 @@
-archive=squad25-final.zip
-sha256=25917f57a5097a18c7a0b292984c4f078c72b275aafab8b6e04ab5364bee615e
-bytes=85407
