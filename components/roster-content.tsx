@@ -1,21 +1,16 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { Member, Role } from '@/data/squad';
 import type { ContentSnapshot } from '@/lib/content';
 import { ArrowUpRight, Search } from '@/components/icons';
 import { MemberModal } from '@/components/member-modal';
+import MemberCard from '@/components/member-card';
 import PublicNav from '@/components/public-nav';
-import { normalizeYoutubeId } from '@/data/squad';
 import { Button } from '@/components/ui';
 
 const filters: (Role | 'ALL')[] = ['ALL', 'EXP', 'JUNGLE', 'MID', 'GOLD', 'ROAM'];
-
-function publicCuts(member: Member) {
-  return member.montages.filter((montage) => Boolean(normalizeYoutubeId(montage.youtubeId))).length;
-}
 
 export default function RosterContent({ content }: { content: ContentSnapshot }) {
   const { profile: squadProfile, members } = content;
@@ -29,7 +24,7 @@ export default function RosterContent({ content }: { content: ContentSnapshot })
   }), [filter, members, query]);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[var(--paper)] text-[var(--ink)]">
+    <main className="min-h-screen overflow-x-clip bg-[var(--paper)] text-[var(--ink)]">
       <PublicNav active="roster" />
 
       <section className="border-b border-white/8 bg-[var(--panel)]">
@@ -45,42 +40,25 @@ export default function RosterContent({ content }: { content: ContentSnapshot })
         <div className="flex flex-col gap-4 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="-mx-[var(--page-gutter)] overflow-x-auto px-[var(--page-gutter)] pb-1 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
             <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
-              {filters.map((item) => (
-                <Button key={item} type="button" size="sm" variant={filter === item ? 'primary' : 'ghost'} onClick={() => setFilter(item)} className="ui-filter-button">
-                  {item}
-                </Button>
-              ))}
+              {filters.map((item) => <Button key={item} type="button" size="sm" variant={filter === item ? 'primary' : 'ghost'} onClick={() => setFilter(item)} className="ui-filter-button">{item}</Button>)}
             </div>
           </div>
           <label className="flex w-full min-w-0 max-w-sm items-center gap-2" aria-label="Search roster"><Search size={15}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search player, hero, role" className="ui-field w-full" /></label>
         </div>
 
-        <div className="mb-5 mt-5 flex items-center justify-between text-[10px] uppercase tracking-[.16em] text-white/25"><span>{visible.length} player{visible.length === 1 ? '' : 's'} shown</span><span>25 total</span></div>
+        <div className="mb-5 mt-5 flex items-center justify-between font-mono text-[10px] uppercase tracking-[.16em] text-white/25"><span>{visible.length} player{visible.length === 1 ? '' : 's'} shown</span><span>25 total</span></div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {visible.map((member, index) => <RosterCard key={member.id} member={member} index={index} onOpen={(item) => setSelected({ member: item })} />)}
+          {visible.map((member, index) => <MemberCard key={member.id} member={member} index={index} onOpen={() => setSelected({ member })} />)}
         </div>
         {visible.length === 0 && <div className="ui-empty mt-3"><div><div className="ui-eyebrow">No public data</div><h2 className="ui-empty-title mt-2">No player matches.</h2><p className="ui-empty-description">Try another player name, hero, or role.</p></div></div>}
       </section>
 
       <section className="border-y border-white/8 bg-[var(--panel)]">
-        <div className="ui-container flex flex-col gap-5 py-14 sm:flex-row sm:items-end sm:justify-between lg:py-20"><div><div className="ui-eyebrow">Recruitment</div><h2 className="mt-3 font-display text-5xl uppercase leading-none sm:text-7xl">Think you belong?</h2><p className="mt-4 max-w-xl text-sm leading-6 text-white/40">Kirim player file dan kasih tim alasan untuk ngajak lo trial.</p></div><Button href="/recruitment"><span>Apply as a player</span><ArrowUpRight size={15}/></Button></div>
+        <div className="ui-container flex flex-col gap-5 py-14 sm:flex-row sm:items-end sm:justify-between lg:py-20"><div><div className="ui-eyebrow">Recruitment</div><h2 className="mt-3 font-display text-5xl uppercase leading-none sm:text-7xl">Think you belong?</h2><p className="mt-4 max-w-xl text-sm leading-6 text-white/40">Kirim player file dan kasih tim alasan untuk ngajak lo trial.</p></div><Button href="/recruitment">Apply as a player <ArrowUpRight size={15}/></Button></div>
       </section>
 
       <footer className="border-t border-white/8"><div className="ui-container flex flex-col gap-4 py-8 text-[10px] uppercase tracking-[.18em] text-white/25 sm:flex-row sm:items-center sm:justify-between"><span>{squadProfile.name} / FULL ROSTER</span><span>{squadProfile.season}</span></div></footer>
       <MemberModal member={selected?.member ?? null} initialMontageIndex={selected?.montageIndex ?? 0} onClose={() => setSelected(null)} />
     </main>
-  );
-}
-
-function RosterCard({ member, index, onOpen }: { member: Member; index: number; onOpen: (member: Member) => void }) {
-  const cuts = publicCuts(member);
-  return (
-    <button type="button" onClick={() => onOpen(member)} aria-label={`Open ${member.nickname} profile`} className="group relative aspect-[16/9] min-h-0 overflow-hidden border border-white/10 bg-[var(--panel)] text-left transition-transform duration-300 ease-out hover:-translate-y-1 hover:border-[color-mix(in_srgb,var(--acid)_36%,transparent)]">
-      <Image src={member.photo} alt={`${member.nickname} profile`} fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw" className="object-cover transition duration-700 ease-out group-hover:scale-[1.04]" priority={index < 3} />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
-      <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(145deg, ${member.accent}18, transparent 38%)` }} />
-      <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-4"><span className="font-mono text-[9px] tracking-[.18em] text-white/50">{member.number} / 25</span><span className="font-mono text-[9px] uppercase tracking-[.16em] text-white/60">{member.status}</span></div>
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6"><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/50">{member.role} / {member.hero}</div><div className="mt-2 font-display text-5xl uppercase leading-none sm:text-6xl" style={{ color: member.accent }}>{member.nickname}</div><div className="mt-2 truncate text-xs text-white/55">{member.name}</div><div className="mt-5 flex items-center justify-between border-t border-white/12 pt-3 font-mono text-[9px] uppercase tracking-[.17em] text-white/40"><span>{cuts > 0 ? `${cuts} public cuts` : 'No public cuts'}</span><span>Open profile ↗</span></div></div>
-    </button>
   );
 }
