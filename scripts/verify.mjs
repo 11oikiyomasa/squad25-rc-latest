@@ -64,6 +64,11 @@ for (const file of ['proxy.ts', 'app/login/page.tsx', 'app/login/actions.ts', 'a
   assert(fs.existsSync(path.join(root, file)), `Missing production auth/content file: ${file}`);
 }
 assert(!ts || Boolean(ts.version), 'TypeScript compiler unavailable for syntax verification');
+const publicContentSource = read('lib/content.ts');
+assert(publicContentSource.includes("createClient as createPublicSupabaseClient"), 'Public content is not using a cookie-free Supabase client');
+assert(publicContentSource.includes('persistSession: false'), 'Public content client persists auth sessions');
+assert(publicContentSource.includes('autoRefreshToken: false'), 'Public content client may auto-refresh auth tokens');
+assert(!publicContentSource.includes("import { createClient, isSupabaseConfigured } from '@/lib/supabase/server'"), 'Public content is coupled to the SSR Auth client');
 assert(read('SUPABASE_SCHEMA.sql').includes('IMPORTANT: supabase/migrations/ is the canonical source of truth.'), 'Supabase schema snapshot is not marked as non-canonical');
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.admin_users'), 'Admin SQL model is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('number text not null'), 'Member number column is missing');
@@ -71,7 +76,7 @@ assert(read('SUPABASE_SCHEMA.sql').includes('accent text not null'), 'Member acc
 assert(read('SUPABASE_SCHEMA.sql').includes('duration text not null'), 'Montage duration column is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.squad_settings'), 'Squad settings SQL model is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.gallery_items'), 'Gallery SQL model is missing');
-assert(/create policy "[^"]+" on public\.members for all using \(private\.is_admin\(\)\) with check \(private\.is_admin\(\)\)/i.test(read('SUPABASE_SCHEMA.sql')), 'Admin RLS policy for member management is missing');
+assert(/create policy "[^\"]+" on public\.members for all using \(private\.is_admin\(\)\) with check \(private\.is_admin\(\)\)/i.test(read('SUPABASE_SCHEMA.sql')), 'Admin RLS policy for member management is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes("bucket_id = 'squad-media'"), 'Storage policy/bucket is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('security invoker'), 'Transactional publish should use SECURITY INVOKER');
 assert(!read('SUPABASE_SCHEMA.sql').includes('public.is_admin()'), 'Exposed public admin authorization helper remains');
@@ -170,3 +175,4 @@ console.log('- SEO canonical: Vercel');
 console.log('- Admin access denial: dedicated 403');
 console.log('- Recruitment submission: invoker-only RPC + private rate-limit trigger');
 console.log('- Scrims RLS: role-specific policies');
+console.log('- Public content: isolated from auth session');
