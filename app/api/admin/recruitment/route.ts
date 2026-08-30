@@ -1,18 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
+import { ensureAdmin } from '@/lib/admin-auth';
 
 const statuses = new Set(['NEW', 'REVIEWING', 'SHORTLISTED', 'REJECTED', 'HIRED']);
-
-async function ensureAdmin() {
-  if (!isSupabaseConfigured()) return { ok: false as const, status: 503, message: 'Supabase is not configured.' };
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const subject = typeof claims?.claims?.sub === 'string' ? claims.claims.sub : '';
-  if (!subject) return { ok: false as const, status: 401, message: 'Authentication required.' };
-  const { data: admin } = await supabase.from('admin_users').select('user_id').eq('user_id', subject).maybeSingle();
-  if (!admin) return { ok: false as const, status: 403, message: 'Admin access required.' };
-  return { ok: true as const, supabase };
-}
 
 export async function GET() {
   const gate = await ensureAdmin();
@@ -42,9 +31,10 @@ export async function PATCH(request: Request) {
   const adminNote = typeof payload.adminNote === 'string' ? payload.adminNote.trim().slice(0, 1600) : '';
   if (!id || !statuses.has(status)) return NextResponse.json({ error: 'Invalid application update.' }, { status: 422 });
 
+  const now = new Date().toISOString();
   const { data, error } = await gate.supabase
     .from('recruitment_applications')
-    .update({ status, admin_note: adminNote, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({ status, admin_note: adminNote, reviewed_at: now, updated_at: now })
     .eq('id', id)
     .select('id,created_at,updated_at,full_name,nickname,role,rank,hero_pool,experience,availability,contact,social_url,message,status,admin_note,reviewed_at,source')
     .single();

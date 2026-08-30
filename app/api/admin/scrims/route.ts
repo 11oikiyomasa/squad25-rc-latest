@@ -1,21 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
+import { ensureAdmin } from '@/lib/admin-auth';
 
 const statuses = new Set(['SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']);
 const formats = new Set(['BO1', 'BO2', 'BO3', 'BO5']);
 const visibilities = new Set(['PUBLIC', 'PRIVATE']);
 const fields = 'id,scheduled_at,opponent_name,format,status,visibility,result_for,result_against,public_note,admin_note,created_at,updated_at';
-
-async function ensureAdmin() {
-  if (!isSupabaseConfigured()) return { ok: false as const, status: 503, message: 'Supabase is not configured.' };
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const subject = typeof claims?.claims?.sub === 'string' ? claims.claims.sub : '';
-  if (!subject) return { ok: false as const, status: 401, message: 'Authentication required.' };
-  const { data: admin } = await supabase.from('admin_users').select('user_id').eq('user_id', subject).maybeSingle();
-  if (!admin) return { ok: false as const, status: 403, message: 'Admin access required.' };
-  return { ok: true as const, supabase };
-}
 
 function parsePayload(body: unknown) {
   if (!body || typeof body !== 'object') throw new Error('Invalid payload.');

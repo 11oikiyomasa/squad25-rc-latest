@@ -1,0 +1,33 @@
+name: Refresh hardening lockfile
+
+on:
+  push:
+    branches: [chore/production-hardening]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(lock): refresh') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Refresh package lock
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Commit lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo 'Lockfile is already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json
+          git commit -m 'chore(lock): refresh hardening dependency lockfile'
+          git push

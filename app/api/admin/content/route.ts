@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSquadContent } from '@/lib/content';
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
+import { ensureAdmin } from '@/lib/admin-auth';
 
 const MEDIA_BUCKET = 'squad-media';
 const PUBLIC_OBJECT_MARKER = `/storage/v1/object/public/${MEDIA_BUCKET}/`;
@@ -21,17 +21,6 @@ function storagePathFromPublicUrl(value: string): string | null {
   } catch {
     return null;
   }
-}
-
-async function ensureAdmin() {
-  if (!isSupabaseConfigured()) return { ok: false as const, status: 503, message: 'Supabase is not configured.' };
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const subject = typeof claims?.claims?.sub === 'string' ? claims.claims.sub : '';
-  if (!subject) return { ok: false as const, status: 401, message: 'Authentication required.' };
-  const { data: admin } = await supabase.from('admin_users').select('user_id').eq('user_id', subject).maybeSingle();
-  if (!admin) return { ok: false as const, status: 403, message: 'Admin access required.' };
-  return { ok: true as const, supabase };
 }
 
 export async function GET() {
@@ -63,7 +52,6 @@ export async function PUT(request: Request) {
   const client = gate.supabase;
   const candidateProfile = profile as Record<string, unknown>;
 
-  // Validate the payload before handing it to the transactional database function.
   const profilePayload = {
     name: String(candidateProfile.name ?? '').slice(0, 80),
     tagline: String(candidateProfile.tagline ?? '').slice(0, 180),
