@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { getPublicScrims } from '@/lib/scrims';
 import ScrimsContent from '@/components/scrims-content';
+import PublicNav from '@/components/public-nav';
+import { getPublicScrims } from '@/lib/scrims';
 
 export const metadata: Metadata = {
   title: 'Match Center — SQUAD.25',
@@ -20,12 +20,7 @@ export default async function ScrimsPage() {
   const scrims = await getPublicScrims();
   return (
     <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
-      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#0c0d0f]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center bg-[#d7ff43] text-sm font-black text-black">S/</span><span className="text-sm font-black tracking-[.22em]">SQUAD.25</span></Link>
-          <div className="flex items-center gap-2"><Link href="/roster" className="border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[.18em] text-white/50 hover:border-white/25 hover:text-white">Roster</Link><Link href="/recruitment" className="border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[.18em] text-white/50 hover:border-white/25 hover:text-white">Recruit</Link></div>
-        </div>
-      </header>
+      <PublicNav active="match" />
 
       <section className="border-b border-white/8 bg-[#101216]">
         <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24">

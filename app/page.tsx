@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getSquadContent } from '@/lib/content';
+import { orderMembersForHomepage } from '@/lib/featured';
 import HomeLanding from '@/components/home-landing';
 
 export const dynamic = 'force-dynamic';
@@ -21,5 +22,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const content = await getSquadContent();
-  return <HomeLanding content={content} />;
+  return <HomeLanding content={{ ...content, members: orderMembersForHomepage(content.members) }} />;
 }

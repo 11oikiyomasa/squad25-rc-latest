@@ -7,6 +7,7 @@ import type { Member, Role } from '@/data/squad';
 import type { ContentSnapshot } from '@/lib/content';
 import { ArrowUpRight, Search } from '@/components/icons';
 import { MemberModal } from '@/components/member-modal';
+import PublicNav from '@/components/public-nav';
 import { normalizeYoutubeId } from '@/data/squad';
 
 const filters: (Role | 'ALL')[] = ['ALL', 'EXP', 'JUNGLE', 'MID', 'GOLD', 'ROAM'];
@@ -28,12 +29,7 @@ export default function RosterContent({ content }: { content: ContentSnapshot })
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#0c0d0f] text-[#f4f0e7]">
-      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#0c0d0f]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center bg-[#d7ff43] text-sm font-black text-black">S/</div><span className="text-sm font-black tracking-[.22em]">{squadProfile.name}</span></Link>
-          <div className="flex items-center gap-3"><span className="hidden font-mono text-[9px] uppercase tracking-[.2em] text-white/25 sm:inline">Roster / {members.length}</span><Link href="/recruitment" className="inline-flex items-center gap-2 border border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-[.18em] text-white/60 hover:border-white/25 hover:text-white">Recruit <ArrowUpRight size={13}/></Link></div>
-        </div>
-      </header>
+      <PublicNav active="roster" />
 
       <section className="border-b border-white/8 bg-[#101216]">
         <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24">
@@ -49,7 +45,7 @@ export default function RosterContent({ content }: { content: ContentSnapshot })
           <div className="-mx-5 overflow-x-auto px-5 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
             <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">{filters.map((item) => <button type="button" key={item} onClick={() => setFilter(item)} className={`shrink-0 border px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[.16em] transition ${filter === item ? 'border-[#d7ff43] bg-[#d7ff43] text-black' : 'border-white/10 text-white/45 hover:text-white'}`}>{item}</button>)}</div>
           </div>
-          <label className="flex w-full min-w-0 items-center gap-2 border border-white/10 px-3 py-3 text-white/35 lg:max-w-sm" aria-label="Search roster"><Search size={15}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search player, hero, role" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25" /></label>
+          <label className="flex w-full min-w-0 items-center gap-2 border border-white/10 px-3 py-3 text-white/35 lg:max-w-sm" aria-label="Search roster"><Search size={15}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search player, hero, role" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25" /></label>
         </div>
 
         <div className="mb-5 mt-5 flex items-center justify-between text-[10px] uppercase tracking-[.16em] text-white/25"><span>{visible.length} player{visible.length === 1 ? '' : 's'} shown</span><span>25 total</span></div>

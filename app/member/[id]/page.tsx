@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { squadProfile, normalizeYoutubeId } from '@/data/squad';
 import { getSquadContent } from '@/lib/content';
-import { ArrowLeft } from '@/components/icons';
 import { MemberTape } from '@/components/member-tape';
+import PublicNav from '@/components/public-nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,14 +36,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
-      <header className="sticky top-0 z-30 border-b border-white/8 bg-[#0c0d0f]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="/roster" className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.18em] text-white/50 hover:text-white">
-            <ArrowLeft size={15} /> Back to roster
-          </a>
-          <div className="text-[10px] font-black uppercase tracking-[.22em] text-white/30">{profile.name} / Profile</div>
-        </div>
-      </header>
+      <PublicNav active="member" />
 
       <section className="mx-auto max-w-7xl px-5 py-8 lg:px-8 lg:py-12">
         <div className="grid gap-6 lg:grid-cols-[.72fr_1.28fr]">
@@ -90,7 +83,14 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
 
               <MemberTape montages={publishedCuts} />
 
-              <div className="mt-10 grid gap-2 sm:grid-cols-2">
+              <div className="mt-10 border border-[#d7ff43]/20 bg-[#d7ff43]/[.04] p-5 sm:p-6">
+                <div className="text-[10px] uppercase tracking-[.22em] text-[#d7ff43]">Open trial path</div>
+                <h3 className="mt-2 font-display text-4xl uppercase sm:text-5xl">Think you can add to this?</h3>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/45">We review players through their role, experience, availability, and ability to communicate in a team.</p>
+                <a href="/recruitment" className="mt-5 inline-flex bg-[#d7ff43] px-4 py-3 text-[10px] font-black uppercase tracking-[.18em] text-black hover:bg-[#e7ff83]">Apply for a trial ↗</a>
+              </div>
+
+              <div className="mt-6 grid gap-2 sm:grid-cols-2">
                 {(() => {
                   const currentIndex = members.findIndex((item) => item.id === member.id);
                   const previous = members[(currentIndex - 1 + members.length) % members.length];

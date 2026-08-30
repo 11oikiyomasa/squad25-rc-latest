@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import RecruitmentForm from '@/components/recruitment-form';
+import PublicNav from '@/components/public-nav';
 
 export const metadata: Metadata = {
   title: 'Player Recruitment',
@@ -18,12 +19,7 @@ export const metadata: Metadata = {
 export default function RecruitmentPage() {
   return (
     <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
-      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#0c0d0f]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-5 lg:px-8">
-          <Link href="/" className="text-sm font-black tracking-[.22em]">NO FLAWS</Link>
-          <Link href="/" className="border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.18em] text-white/50 hover:border-white/25 hover:text-white">Back to squad</Link>
-        </div>
-      </header>
+      <PublicNav active="recruit" />
 
       <section className="mx-auto max-w-5xl px-5 py-14 lg:px-8 lg:py-20">
         <div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:gap-16">
@@ -35,6 +31,10 @@ export default function RecruitmentPage() {
               <div className="flex justify-between gap-4"><span>Roles</span><span className="text-white/50">EXP / JUNGLE / MID / GOLD / ROAM / FLEX</span></div>
               <div className="flex justify-between gap-4"><span>Process</span><span className="text-white/50">Review → Contact → Trial</span></div>
               <div className="flex justify-between gap-4"><span>Contact</span><span className="text-white/50">We use the contact you submit</span></div>
+            </div>
+            <div className="mt-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <Link href="/roster" className="border border-white/10 px-4 py-3 text-[10px] font-semibold uppercase tracking-[.17em] text-white/55 hover:border-white/25 hover:text-white">Review the roster ↗</Link>
+              <Link href="/scrims" className="border border-white/10 px-4 py-3 text-[10px] font-semibold uppercase tracking-[.17em] text-white/55 hover:border-white/25 hover:text-white">See match activity ↗</Link>
             </div>
           </div>
 
