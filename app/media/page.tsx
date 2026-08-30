@@ -33,7 +33,7 @@ export default async function MediaPage() {
         {gallery.length ? <GalleryGrid items={gallery} /> : <EmptyState title="Archive is quiet." description="No public media has been published yet." />}
       </Section>
       <footer className="border-t border-white/8">
-        <div className="ui-container flex flex-col gap-4 py-8 text-[10px] uppercase tracking-[.18em] text-white/25] sm:flex-row sm:items-center sm:justify-between">
+        <div className="ui-container flex flex-col gap-4 py-8 text-[10px] uppercase tracking-[.18em] text-white/25 sm:flex-row sm:items-center sm:justify-between">
           <span>SQUAD.25 / MEDIA</span><span>2026</span>
         </div>
       </footer>
