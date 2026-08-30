@@ -1,5 +1,5 @@
 import { gallery as seedGallery, achievements as seedAchievements, members as seedMembers, squadProfile, normalizeYoutubeId, type Member } from '@/data/squad';
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
+import { createClient as createPublicSupabaseClient } from '@supabase/supabase-js';
 
 export type ContentSnapshot = {
   profile: typeof squadProfile;
@@ -14,17 +14,34 @@ type ProfileRow = { id: number; name: string; tagline: string; season: string; i
 type GalleryRow = { id: string; title: string; caption: string; image_url: string; sort_order: number };
 type AchievementRow = { year: number | null; title: string; description: string; };
 
+function isSupabaseConfigured() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+}
+
 function normalizeAccent(role: Member['role'], value: string): string {
   const accent = value.trim().toLowerCase();
   if (accent === '#d7ff43' || accent === '#ff6b38') return accent;
   return role === 'JUNGLE' || role === 'GOLD' ? '#ff6b38' : '#d7ff43';
 }
 
+function createPublicClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error('Supabase public configuration is missing.');
+  return createPublicSupabaseClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
 export async function getSquadContent(): Promise<ContentSnapshot> {
   if (!isSupabaseConfigured()) return { profile: squadProfile, members: seedMembers, achievements: seedAchievements, gallery: seedGallery };
 
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const [profileResult, membersResult, montagesResult, achievementsResult, galleryResult] = await Promise.all([
       supabase.from('squad_settings').select('id,name,tagline,season,instagram_url,tiktok_url,youtube_url').eq('id', 1).maybeSingle(),
       supabase.from('members').select('id,slug,number,nickname,full_name,role,main_hero,status,bio,accent,photo_url,sort_order').order('sort_order', { ascending: true }),
