@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import type { Scrim } from '@/lib/scrims';
 
@@ -17,8 +15,7 @@ function outcome(scrim: Scrim) {
   return scrim.result_for > scrim.result_against ? 'WIN' : 'LOSS';
 }
 
-export default function MatchCenter({ scrims }: { scrims: Scrim[] }) {
-  const now = Date.now();
+export default function MatchCenter({ scrims, now }: { scrims: Scrim[]; now: number }) {
   const upcoming = scrims.filter((scrim) => scrim.status === 'LIVE' || (scrim.status === 'SCHEDULED' && new Date(scrim.scheduled_at).getTime() >= now)).sort((a, b) => {
     if (a.status === 'LIVE' && b.status !== 'LIVE') return -1;
     if (b.status === 'LIVE' && a.status !== 'LIVE') return 1;
