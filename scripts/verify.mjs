@@ -149,6 +149,12 @@ assert(!homeSource.includes('{member.montages.length} cuts'), 'Legacy roster car
 assert(homeSource.includes('No public cuts'), 'Legacy roster component lacks an explicit empty state for unpublished montage content');
 assert(landingSource.includes('members.slice(0, 6)'), 'Curated homepage must cap featured roster at six players');
 assert(pageSource.includes('HomeLanding') && !pageSource.includes('HomeContent'), 'Homepage is still wired to the legacy roster-heavy component');
+const rosterPageSource = read('app/roster/page.tsx');
+const recruitmentPageSource = read('app/recruitment/page.tsx');
+assert(rosterPageSource.includes("alternates: { canonical: '/roster' }"), 'Roster page canonical metadata is missing or incorrect');
+assert(rosterPageSource.includes("url: '/roster'"), 'Roster Open Graph URL is missing or incorrect');
+assert(recruitmentPageSource.includes("alternates: { canonical: '/recruitment' }"), 'Recruitment canonical metadata is missing or incorrect');
+assert(recruitmentPageSource.includes("url: '/recruitment'"), 'Recruitment Open Graph URL is missing or incorrect');
 assert(read('app/sitemap.ts').includes(`${'/roster'}`) && read('app/sitemap.ts').includes(`${'/recruitment'}`), 'Sitemap is missing roster or recruitment routes');
 const globalCss = read('app/globals.css');
 assert(globalCss.includes('var(--font-display)') && globalCss.includes('prefers-reduced-motion'), 'Typography/accessibility hardening missing');
@@ -176,3 +182,4 @@ console.log('- Admin access denial: dedicated 403');
 console.log('- Recruitment submission: invoker-only RPC + private rate-limit trigger');
 console.log('- Scrims RLS: role-specific policies');
 console.log('- Public content: isolated from auth session');
+console.log('- Route SEO: roster/recruitment canonical + Open Graph URLs');
