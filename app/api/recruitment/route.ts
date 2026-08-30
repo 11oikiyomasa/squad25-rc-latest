@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc('submit_recruitment_application', {
+  const { error } = await supabase.rpc('submit_recruitment_application', {
     payload: {
       fullName,
       nickname,
