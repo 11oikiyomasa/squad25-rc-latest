@@ -98,7 +98,7 @@ button { cursor: pointer; }
 .ui-page-header-inner { display: grid; gap: var(--space-8); align-items: end; padding-block: clamp(56px, 8vw, 96px); }
 .ui-page-header-copy { min-width: 0; }
 .ui-page-title { margin: 12px 0 0; max-width: 960px; overflow-wrap: anywhere; font-family: var(--font-display), Arial, sans-serif; font-size: clamp(56px, 10vw, 128px); font-weight: 750; line-height: .80; letter-spacing: -.055em; text-transform: uppercase; }
-.ui-page-title-accent { display: inline; color: var(--acid); }
+.ui-page-title-accent { display: block; color: var(--acid); }
 .ui-page-description { max-width: 720px; margin: 24px 0 0; color: rgba(255,255,255,.52); font-size: 15px; line-height: 1.8; }
 .ui-page-header-aside { max-width: 340px; border-left: 1px solid var(--line); padding-left: var(--space-5); color: rgba(255,255,255,.55); font-size: 13px; line-height: 1.7; }
 
@@ -114,6 +114,7 @@ button { cursor: pointer; }
 .ui-button-ghost:hover { border-color: var(--line-soft); color: var(--ink); background: rgba(255,255,255,.025); }
 .ui-button-sm { min-height: 40px; padding-inline: 12px; }
 .ui-button-md { min-height: 44px; padding-inline: 16px; }
+.ui-filter-button { width: auto !important; }
 
 .ui-field { min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--panel-deep); color: var(--ink); padding: 0 12px; outline: none; transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease; }
 .ui-field::placeholder { color: rgba(255,255,255,.25); }
