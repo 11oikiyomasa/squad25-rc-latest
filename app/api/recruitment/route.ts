@@ -3,11 +3,6 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const roles = new Set(['EXP', 'JUNGLE', 'MID', 'GOLD', 'ROAM', 'FLEX']);
 
-type RateLimitResult = {
-  ok?: boolean;
-  retryAfter?: number;
-};
-
 function cleanText(value: unknown, max: number) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
@@ -19,6 +14,14 @@ function getClientIp(request: Request) {
   return request.headers.get('x-real-ip')?.trim() || 'unknown';
 }
 
+function rateLimitResponse(retryAfter: unknown, message: string) {
+  const seconds = Math.max(1, Math.min(86400, Number(retryAfter) || 900));
+  return NextResponse.json(
+    { error: message },
+    { status: 429, headers: { 'Retry-After': String(seconds), 'Cache-Control': 'no-store' } },
+  );
+}
+
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: 'Recruitment is temporarily unavailable.' }, { status: 503 });
@@ -27,13 +30,12 @@ export async function POST(request: Request) {
   let body: Record<string, unknown>;
   try {
     const parsed: unknown = await request.json();
-    if (!parsed || typeof parsed !== 'object') throw new Error('invalid');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid');
     body = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'Invalid application payload.' }, { status: 400 });
   }
 
-  // Quiet honeypot: bots get the same success shape without creating a record.
   if (cleanText(body.website, 120)) {
     return NextResponse.json({ ok: true });
   }
@@ -81,17 +83,15 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    if (error.message === 'RECRUITMENT_RATE_LIMIT') {
+      return rateLimitResponse(error.details, 'Terlalu banyak pengiriman. Coba lagi nanti.');
+    }
+    if (error.message === 'RECRUITMENT_CONTACT_COOLDOWN') {
+      return rateLimitResponse(error.details, 'Kontak ini sudah mengirim aplikasi. Coba lagi besok.');
+    }
+
     console.error('Recruitment submission failed:', error.message);
     return NextResponse.json({ error: 'Application gagal disimpan. Coba lagi.' }, { status: 500 });
-  }
-
-  const result = (data ?? null) as RateLimitResult | null;
-  if (!result?.ok) {
-    const retryAfter = Math.max(1, Math.min(86400, Number(result?.retryAfter) || 900));
-    return NextResponse.json(
-      { error: 'Terlalu banyak pengiriman. Coba lagi nanti.' },
-      { status: 429, headers: { 'Retry-After': String(retryAfter), 'Cache-Control': 'no-store' } },
-    );
   }
 
   return NextResponse.json({ ok: true });
