@@ -98,6 +98,9 @@ const expectedMigrations = [
   '20260829132004_add_scrims.sql',
   '20260830084031_harden_recruitment_rate_limit.sql',
   '20260830084158_align_recruitment_contact_rate_index.sql',
+  '20260830085041_harden_recruitment_submission_security.sql',
+  '20260830085109_align_scrims_rls_policies.sql',
+  '20260830085232_restore_recruitment_invoker_insert_access.sql',
 ];
 const actualMigrations = fs.readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
 assert(JSON.stringify(actualMigrations) === JSON.stringify(expectedMigrations), 'Supabase migration set drifted from the reconciled production history');
@@ -106,10 +109,14 @@ assert(migrationSql.includes('create table if not exists public.recruitment_appl
 assert(migrationSql.includes('create table if not exists public.scrims'), 'Scrims table is missing from canonical migrations');
 assert(migrationSql.includes('create table if not exists private.recruitment_rate_limits'), 'Recruitment rate-limit table is missing from canonical migrations');
 assert(migrationSql.includes('create or replace function public.submit_recruitment_application(payload jsonb, client_ip text)'), 'Atomic recruitment submission function is missing from canonical migrations');
-assert(migrationSql.includes('revoke insert on table public.recruitment_applications from anon, authenticated'), 'Recruitment direct insert grant was not revoked');
+assert(migrationSql.includes('create or replace function private.enforce_recruitment_submission_limits()'), 'Private recruitment trigger function is missing from canonical migrations');
 assert(migrationSql.includes('recruitment_applications_contact_norm_created_at_idx'), 'Recruitment contact cooldown index is missing from canonical migrations');
-assert(migrationSql.includes('security invoker'), 'Canonical migrations lost SECURITY INVOKER publish behavior');
+assert(migrationSql.includes('security invoker'), 'Canonical migrations lost SECURITY INVOKER behavior');
 assert(migrationSql.includes('revoke all on function public.publish_squad_content(jsonb) from public'), 'Canonical migrations lost restricted publish execute grants');
+assert(migrationSql.includes('create policy "Authenticated can submit recruitment applications"'), 'Authenticated recruitment insert policy is missing');
+assert(migrationSql.includes('grant insert on table public.recruitment_applications to anon, authenticated'), 'Invoker recruitment insert grants are missing');
+assert(migrationSql.includes('create policy "Public can read public scrims"'), 'Scrims public read policy is missing');
+assert(migrationSql.includes('to authenticated'), 'Authenticated scrims policies are missing');
 assert(read('README.md').includes('supabase/migrations/` is the **canonical database source of truth**'), 'README does not identify migrations as canonical');
 assert(read('README.md').includes('SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` are retained as **manual compatibility snapshots only**'), 'README still presents SQL snapshots as a provisioning source');
 assert(read('supabase/MIGRATIONS.md').includes('canonical source of truth'), 'Repository migration policy document is missing');
@@ -161,3 +168,5 @@ console.log('- Routes/config: present');
 console.log('- Curated homepage roster: 6 max');
 console.log('- SEO canonical: Vercel');
 console.log('- Admin access denial: dedicated 403');
+console.log('- Recruitment submission: invoker-only RPC + private rate-limit trigger');
+console.log('- Scrims RLS: role-specific policies');
