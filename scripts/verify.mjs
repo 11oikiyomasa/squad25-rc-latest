@@ -97,6 +97,7 @@ const expectedMigrations = [
   '20260829122711_add_player_recruitment_applications.sql',
   '20260829132004_add_scrims.sql',
   '20260830084031_harden_recruitment_rate_limit.sql',
+  '20260830084158_align_recruitment_contact_rate_index.sql',
 ];
 const actualMigrations = fs.readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
 assert(JSON.stringify(actualMigrations) === JSON.stringify(expectedMigrations), 'Supabase migration set drifted from the reconciled production history');
@@ -106,6 +107,7 @@ assert(migrationSql.includes('create table if not exists public.scrims'), 'Scrim
 assert(migrationSql.includes('create table if not exists private.recruitment_rate_limits'), 'Recruitment rate-limit table is missing from canonical migrations');
 assert(migrationSql.includes('create or replace function public.submit_recruitment_application(jsonb, text)'), 'Atomic recruitment submission function is missing from canonical migrations');
 assert(migrationSql.includes('revoke insert on table public.recruitment_applications from anon, authenticated'), 'Recruitment direct insert grant was not revoked');
+assert(migrationSql.includes('recruitment_applications_contact_norm_created_at_idx'), 'Recruitment contact cooldown index is missing from canonical migrations');
 assert(migrationSql.includes('security invoker'), 'Canonical migrations lost SECURITY INVOKER publish behavior');
 assert(migrationSql.includes('revoke all on function public.publish_squad_content(jsonb) from public'), 'Canonical migrations lost restricted publish execute grants');
 assert(read('README.md').includes('supabase/migrations/` is the **canonical database source of truth**'), 'README does not identify migrations as canonical');
