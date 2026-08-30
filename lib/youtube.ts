@@ -15,6 +15,7 @@ export async function checkYoutubeVideo(id: string): Promise<YoutubeCheck> {
   try {
     const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(id)}&format=json`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(3000),
       headers: { accept: 'application/json' },
     });
 
@@ -36,6 +37,13 @@ export async function checkYoutubeVideo(id: string): Promise<YoutubeCheck> {
 
 export async function checkYoutubeVideos(ids: string[]) {
   const unique = [...new Set(ids.filter(Boolean))];
-  const checks = await Promise.all(unique.map(checkYoutubeVideo));
-  return new Map(checks.map((check) => [check.id, check]));
+  const results: YoutubeCheck[] = [];
+  const concurrency = 5;
+
+  for (let index = 0; index < unique.length; index += concurrency) {
+    const batch = unique.slice(index, index + concurrency);
+    results.push(...await Promise.all(batch.map(checkYoutubeVideo)));
+  }
+
+  return new Map(results.map((check) => [check.id, check]));
 }
