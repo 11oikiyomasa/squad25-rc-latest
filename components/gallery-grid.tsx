@@ -27,7 +27,7 @@ export function GalleryGrid({ items }: { items: GalleryItem[] }) {
             aria-label={`Open ${item.title}`}
             className={`group relative overflow-hidden border border-white/8 bg-[#14171b] text-left ${index === 0 ? 'sm:row-span-2 lg:col-span-5 lg:row-span-4' : index === 1 ? 'lg:col-span-4 lg:row-span-3' : index === 2 ? 'lg:col-span-3 lg:row-span-3' : index === 3 ? 'lg:col-span-4 lg:row-span-2' : index === 4 ? 'lg:col-span-3 lg:row-span-2' : 'lg:col-span-5 lg:row-span-3'}`}
           >
-            <Image src={item.image} alt={item.title} fill sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 40vw" className="object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:grayscale-0" />
+            <Image src={item.image} alt={item.title} fill loading="lazy" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 40vw" className="object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:grayscale-0" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
               <div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/40">{item.meta}</div>
