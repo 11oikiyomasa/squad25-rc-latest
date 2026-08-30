@@ -26,17 +26,42 @@ export async function POST(request: Request) {
   const contentLength = Number(request.headers.get('content-length') || 0); if (contentLength > MAX_MULTIPART_BYTES) return fail('Payload terlalu besar. Resume maksimal 5 MB.', 413);
   const form = await request.formData().catch(() => null); if (!form) return fail('Multipart payload tidak valid.', 400);
   if (text(form.get('website'), 120)) return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
-  const jobId = text(form.get('jobId'), 64), fullName = text(form.get('fullName'), 80), nickname = text(form.get('nickname'), 30), email = text(form.get('email'), 254).toLowerCase(), phone = text(form.get('phone'), 40), role = text(form.get('role'), 10).toUpperCase()), portfolioLink = text(form.get('portfolioLink'), 500), coverLetter = text(form.get('coverLetter'), 5000), captchaToken = text(form.get('turnstileToken'), 2048), resume = form.get('resume');
+
+  const jobId = text(form.get('jobId'), 64);
+  const fullName = text(form.get('fullName'), 80);
+  const nickname = text(form.get('nickname'), 30);
+  const email = text(form.get('email'), 254).toLowerCase();
+  const phone = text(form.get('phone'), 40);
+  const role = text(form.get('role'), 10).toUpperCase();
+  const portfolioLink = text(form.get('portfolioLink'), 500);
+  const coverLetter = text(form.get('coverLetter'), 5000);
+  const captchaToken = text(form.get('turnstileToken'), 2048);
+  const resume = form.get('resume');
+
   if (!jobId || fullName.length < 2 || fullName.length > 80 || nickname.length < 1 || !isValidEmail(email) || phone.length < 3 || !ROLES.has(role)) return fail('Periksa nama, email, nomor telepon, dan role.');
   if (portfolioLink && !isValidHttpUrl(portfolioLink)) return fail('Portfolio URL tidak valid.');
   if (!(resume instanceof File) || !assertPdf(resume) || !(await hasPdfMagicBytes(resume))) return fail('Resume harus berupa PDF valid maksimal 5 MB.');
   if (!(await verifyTurnstile(captchaToken, request))) return fail('Verifikasi anti-spam gagal. Silakan coba lagi.', 403);
-  const objectPath = `applications/${randomUUID()}.pdf`; const bytes = Buffer.from(await resume.arrayBuffer()); const sha256 = createHash('sha256').update(bytes).digest('hex'); const admin = createAdminClient();
+
+  const objectPath = `applications/${randomUUID()}.pdf`;
+  const bytes = Buffer.from(await resume.arrayBuffer());
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  const admin = createAdminClient();
   const { error: uploadError } = await admin.storage.from('recruitment-resumes').upload(objectPath, bytes, { contentType: 'application/pdf', upsert: false });
   if (uploadError) { console.error('Resume upload failed:', uploadError.message); return fail('Resume gagal diupload. Coba lagi.', 500); }
-  const supabase = await createClient(); const { data: applicationId, error } = await supabase.rpc('submit_recruitment_application_v7', { payload: { jobId, fullName, nickname, email, phone, role, portfolioLink, coverLetter, resumePath: objectPath, resumeSize: resume.size, website: '' }, client_ip: clientIp(request) });
-  if (error || !applicationId) { await admin.storage.from('recruitment-resumes').remove([objectPath]); const message = error?.message ?? ''; if (message.includes('DUPLICATE_APPLICATION')) return fail('Email ini sudah pernah dipakai untuk lowongan tersebut.', 409); if (message.includes('RECRUITMENT_RATE_LIMIT')) return fail('Terlalu banyak pengiriman. Coba lagi nanti.', 429); if (message.includes('JOB_UNAVAILABLE')) return fail('Lowongan sudah tidak tersedia.', 409); console.error('Recruitment RPC failed:', message); return fail('Application gagal disimpan. Coba lagi.', 500); }
+
+  const supabase = await createClient();
+  const { data: applicationId, error } = await supabase.rpc('submit_recruitment_application_v7', { payload: { jobId, fullName, nickname, email, phone, role, portfolioLink, coverLetter, resumePath: objectPath, resumeSize: resume.size, website: '' }, client_ip: clientIp(request) });
+  if (error || !applicationId) {
+    await admin.storage.from('recruitment-resumes').remove([objectPath]);
+    const message = error?.message ?? '';
+    if (message.includes('DUPLICATE_APPLICATION')) return fail('Email ini sudah pernah dipakai untuk lowongan tersebut.', 409);
+    if (message.includes('RECRUITMENT_RATE_LIMIT')) return fail('Terlalu banyak pengiriman. Coba lagi nanti.', 429);
+    if (message.includes('JOB_UNAVAILABLE')) return fail('Lowongan sudah tidak tersedia.', 409);
+    console.error('Recruitment RPC failed:', message); return fail('Application gagal disimpan. Coba lagi.', 500);
+  }
   await admin.from('recruitment_applications').update({ resume_sha256: sha256, resume_original_name: resume.name.slice(0, 255), captcha_verified_at: new Date().toISOString() }).eq('id', applicationId);
-  const { data: job } = await admin.from('recruitment_jobs').select('title').eq('id', jobId).maybeSingle(); await sendConfirmationEmail(email, fullName, job?.title ?? 'the position');
+  const { data: job } = await admin.from('recruitment_jobs').select('title').eq('id', jobId).maybeSingle();
+  await sendConfirmationEmail(email, fullName, job?.title ?? 'the position');
   return NextResponse.json({ ok: true, applicationId }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
 }
