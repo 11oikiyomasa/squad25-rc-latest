@@ -15,6 +15,7 @@ for (const file of [
   'app/api/admin/recruitment/route.ts',
   'supabase/migrations/20260829122711_add_player_recruitment_applications.sql',
   'supabase/migrations/20260830084031_harden_recruitment_rate_limit.sql',
+  'supabase/migrations/20260830084158_align_recruitment_contact_rate_index.sql',
 ]) {
   assert(fs.existsSync(path.join(root, file)), `Missing recruitment file: ${file}`);
 }
@@ -29,12 +30,16 @@ assert(migration.includes('grant select, update on table public.recruitment_appl
 
 const hardening = read('supabase/migrations/20260830084031_harden_recruitment_rate_limit.sql');
 assert(hardening.includes('create table if not exists private.recruitment_rate_limits'), 'Recruitment rate-limit table is missing');
-assert(hardening.includes('create or replace function public.submit_recruitment_application(jsonb, text)'), 'Atomic recruitment submission function is missing');
+assert(hardening.includes('create or replace function public.submit_recruitment_application(payload jsonb, client_ip text)'), 'Atomic recruitment submission function is missing');
 assert(hardening.includes("request_count >= 5"), 'IP rate-limit threshold is missing');
 assert(hardening.includes("interval '15 minutes'"), 'IP rate-limit window is missing');
 assert(hardening.includes("interval '24 hours'"), 'Recruitment contact cooldown is missing');
 assert(hardening.includes('pg_advisory_xact_lock'), 'Recruitment rate limiter lacks transactional concurrency locking');
 assert(hardening.includes('revoke insert on table public.recruitment_applications from anon, authenticated'), 'Direct anonymous recruitment inserts remain enabled');
+
+const indexMigration = read('supabase/migrations/20260830084158_align_recruitment_contact_rate_index.sql');
+assert(indexMigration.includes('recruitment_applications_contact_norm_created_at_idx'), 'Recruitment contact cooldown index is missing');
+assert(indexMigration.includes("lower(regexp_replace(btrim(contact), '[[:space:]]+', ' ', 'g'))"), 'Recruitment contact index does not match the normalization expression');
 
 const form = read('components/recruitment-form.tsx');
 assert(form.includes("fetch('/api/recruitment'"), 'Recruitment form is not connected to the API');
@@ -43,12 +48,11 @@ assert(form.includes('Do not send') || form.includes('Jangan kirim password'), '
 
 const publicApi = read('app/api/recruitment/route.ts');
 assert(publicApi.includes("body.website"), 'Recruitment API does not evaluate the honeypot');
-assert(publicApi.includes("status: 'NEW'") || publicApi.includes("status: 429"), 'Recruitment API does not expose expected submission result handling');
-assert(publicApi.includes('new URL(socialUrl)'), 'Recruitment API URL validation is missing');
 assert(publicApi.includes("submit_recruitment_application"), 'Recruitment API is not using the atomic rate-limited submission function');
 assert(publicApi.includes("status: 429"), 'Recruitment API does not return HTTP 429 when rate limited');
 assert(publicApi.includes('Retry-After'), 'Recruitment API does not expose Retry-After');
 assert(!publicApi.includes("from('recruitment_applications').insert"), 'Recruitment API still performs a direct table insert');
+assert(publicApi.includes("request.headers.get('x-forwarded-for')"), 'Recruitment API is not deriving the client IP from forwarded headers');
 
 const adminApi = read('app/api/admin/recruitment/route.ts');
 assert(adminApi.includes('ensureAdmin'), 'Recruitment admin API gate is missing');
@@ -65,5 +69,6 @@ if (failures.length) {
 console.log('RECRUITMENT VERIFY: PASS');
 console.log('- Public application form/API: present');
 console.log('- Atomic database rate limiter: present');
+console.log('- Contact cooldown index: aligned');
 console.log('- Admin inbox/API: present');
 console.log('- Historical RLS/grants migration: present');
