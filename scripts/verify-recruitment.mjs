@@ -45,6 +45,8 @@ const form = read('components/recruitment-form.tsx');
 assert(form.includes("fetch('/api/recruitment'"), 'Recruitment form is not connected to the API');
 assert(form.includes('website'), 'Recruitment honeypot field is missing');
 assert(form.includes('Do not send') || form.includes('Jangan kirim password'), 'Sensitive-data warning is missing');
+assert(form.includes('response.status === 429'), 'Recruitment form does not handle HTTP 429 explicitly');
+assert(form.includes('Retry-After'), 'Recruitment form does not read Retry-After for rate-limit feedback');
 
 const publicApi = read('app/api/recruitment/route.ts');
 assert(publicApi.includes("body.website"), 'Recruitment API does not evaluate the honeypot');
@@ -70,5 +72,6 @@ console.log('RECRUITMENT VERIFY: PASS');
 console.log('- Public application form/API: present');
 console.log('- Atomic database rate limiter: present');
 console.log('- Contact cooldown index: aligned');
+console.log('- 429 frontend feedback: present');
 console.log('- Admin inbox/API: present');
 console.log('- Historical RLS/grants migration: present');
