@@ -6,6 +6,7 @@ export type Montage = {
   duration: string;
   youtubeId: string;
   description: string;
+  publishedAt?: string;
 };
 
 export function normalizeYoutubeId(value: string): string {
@@ -89,14 +90,8 @@ export const members: Member[] = names.map(([nickname, name], index) => {
     accent: accents[index % accents.length],
     photo: `/images/members/${nickname.toLowerCase()}.svg`,
     montages: [
-      {
-        title: `${nickname} — matchday cut`, hero: heroes[index % heroes.length], duration: '00:42',
-        youtubeId: '', description: 'Matchday archive cut.'
-      },
-      {
-        title: `${nickname} — ranked session`, hero: heroes[(index + 3) % heroes.length], duration: '01:08',
-        youtubeId: '', description: 'Matchday archive cut.'
-      },
+      { title: `${nickname} — matchday cut`, hero: heroes[index % heroes.length], duration: '00:42', youtubeId: '', description: 'Matchday archive cut.' },
+      { title: `${nickname} — ranked session`, hero: heroes[(index + 3) % heroes.length], duration: '01:08', youtubeId: '', description: 'Matchday archive cut.' },
     ],
   };
 });
