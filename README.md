@@ -14,10 +14,12 @@ A dark, editorial-style MLBB squad roster and montage archive built with Next.js
 - Squad photo archive
 - Responsive mobile-first layout
 - Not-found and error states
-- Supabase production schema + RLS + public media bucket (`SUPABASE_SCHEMA.sql`) aligned with the connected project
+- Supabase production schema + RLS + public media bucket
 - Local/Cloud Content Studio at `/admin` with member/montage editing, JSON import/export, protected publishing, and member photo upload
 - Supabase email/password login at `/login` with protected `/admin` and admin allowlist
 - Public content API with seed-data fallback when Supabase is not configured
+- Recruitment application flow at `/recruitment` with private admin management
+- Public scrim schedule at `/scrims` with private internal notes
 - SSR-safe admin hydration guard (browser storage is only read after mount)
 - Environment template (`.env.example`)
 
@@ -36,7 +38,25 @@ Then open `http://localhost:3000`.
 
 Edit `data/squad.ts` for the temporary local content model. Replace the placeholder member SVGs in `public/images/members/` and add real YouTube IDs to each `youtubeId` field before launch.
 
-For a fresh production database, run `SUPABASE_SCHEMA.sql` and then `SUPABASE_SEED.sql`. Then create an Auth user and add its UUID to `public.admin_users`. The connected project used for this build is already seeded. Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`/Vercel. See `ADMIN_PRODUCTION.md`. Never expose a service-role/secret key in `NEXT_PUBLIC_*`.
+### Database setup
+
+`supabase/migrations/` is the **canonical database source of truth**. Do not provision a new environment by running `SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` as the primary workflow.
+
+For a fresh Supabase project:
+
+```bash
+supabase login
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
+The migration baseline contains the reconciled core schema and starter content. Later migrations add atomic admin publishing, recruitment applications, and scrims. The historical migration markers are retained so the repository's migration timeline stays aligned with the connected production project.
+
+`SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` are retained as **manual compatibility snapshots only**. They are not the canonical migration source and must not become a second schema-maintenance path.
+
+Create an Auth user and add its UUID to `public.admin_users` when setting up an administrator. Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`/Vercel. Never expose a service-role/secret key in `NEXT_PUBLIC_*`. See `ADMIN_PRODUCTION.md`.
+
+For day-to-day schema changes, create a new migration under `supabase/migrations/`, test it with `supabase db reset`, then deploy with `supabase db push`. Supabase tracks applied migration versions separately from Git, so changing the remote schema outside migrations can cause migration-history drift. See `supabase/MIGRATIONS.md` for the repository-specific policy.
 
 ## Verification
 
@@ -50,7 +70,7 @@ npm run build
 npm start
 ```
 
-The CI also smoke-tests `/`, `/member/ryuu`, `/login`, and `/api/health` against the built production server.
+The verification suite checks product structure, TypeScript syntax, auth/API routes, the canonical Supabase migration set, and key security invariants. CI also smoke-tests `/`, `/member/ryuu`, `/login`, and `/api/health` against the built production server.
 
 The latest clean-run verification passed with:
 
