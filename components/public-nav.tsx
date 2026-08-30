@@ -1,13 +1,14 @@
 import Link from 'next/link';
 
-type Active = 'home' | 'roster' | 'match' | 'recruit' | 'member';
+type Active = 'home' | 'roster' | 'match' | 'media' | 'recruit' | 'member';
 
 export default function PublicNav({ active }: { active?: Active }) {
   const links = [
     { href: '/', label: 'Home', key: 'home' as const },
     { href: '/roster', label: 'Roster', key: 'roster' as const },
-    { href: '/scrims', label: 'Match', key: 'match' as const },
-    { href: '/recruitment', label: 'Recruit', key: 'recruit' as const },
+    { href: '/matches', label: 'Matches', key: 'match' as const },
+    { href: '/media', label: 'Media', key: 'media' as const },
+    { href: '/recruitment', label: 'Recruitment', key: 'recruit' as const },
   ];
 
   return (
@@ -21,12 +22,7 @@ export default function PublicNav({ active }: { active?: Active }) {
           {links.map((link) => {
             const isActive = active === link.key;
             return (
-              <Link
-                key={link.key}
-                href={link.href}
-                aria-current={isActive ? 'page' : undefined}
-                className={`shrink-0 border px-3 py-2 text-[10px] font-semibold uppercase tracking-[.16em] transition ${isActive ? 'border-[#d7ff43]/35 bg-[#d7ff43]/[.06] text-[#d7ff43]' : 'border-transparent text-white/45 hover:border-white/10 hover:text-white'}`}
-              >
+              <Link key={link.key} href={link.href} aria-current={isActive ? 'page' : undefined} className={`shrink-0 border px-3 py-2 text-[10px] font-semibold uppercase tracking-[.16em] transition ${isActive ? 'border-[#d7ff43]/35 bg-[#d7ff43]/[.06] text-[#d7ff43]' : 'border-transparent text-white/45 hover:border-white/10 hover:text-white'}`}>
                 {link.label}
               </Link>
             );
