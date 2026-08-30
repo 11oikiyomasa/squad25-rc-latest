@@ -34,6 +34,13 @@ function toPayload(form: Form) {
   return { scheduledAt, opponentName: form.opponentName, format: form.format, status: form.status, visibility: form.visibility, resultFor: form.resultFor === '' ? null : Number(form.resultFor), resultAgainst: form.resultAgainst === '' ? null : Number(form.resultAgainst), publicNote: form.publicNote, adminNote: form.adminNote };
 }
 
+async function fetchScrims(): Promise<Scrim[]> {
+  const response = await fetch('/api/admin/scrims', { cache: 'no-store' });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error ?? 'Failed to load scrims.');
+  return Array.isArray(payload?.scrims) ? payload.scrims as Scrim[] : [];
+}
+
 export default function ScrimControl() {
   const [scrims, setScrims] = useState<Scrim[]>([]);
   const [form, setForm] = useState<Form>(blank);
@@ -46,15 +53,29 @@ export default function ScrimControl() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/admin/scrims', { cache: 'no-store' });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload?.error ?? 'Failed to load scrims.');
-      setScrims(payload.scrims ?? []);
-    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Failed to load scrims.'); }
-    finally { setLoading(false); }
+      setScrims(await fetchScrims());
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Failed to load scrims.');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      try {
+        const next = await fetchScrims();
+        if (!cancelled) setScrims(next);
+      } catch (caught) {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : 'Failed to load scrims.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void run();
+    return () => { cancelled = true; };
+  }, []);
 
   const upcomingCount = useMemo(() => scrims.filter((item) => item.status === 'SCHEDULED' || item.status === 'LIVE').length, [scrims]);
 
@@ -112,7 +133,7 @@ export default function ScrimControl() {
       </section>
 
       <section>
-        <div className="flex items-end justify-between gap-4 border-b border-white/8 pb-5"><div><div className="text-[10px] uppercase tracking-[.24em] text-white/30">Control room</div><h2 className="mt-2 font-display text-5xl uppercase leading-none sm:text-7xl">All rooms.</h2></div><button type="button" onClick={() => void load()} className="border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.18em] text-white/45">Refresh</button></div>
+        <div className="flex items-end justify-between gap-4 border-b border-white/8 pb-5"><div><div className="text-[10px] uppercase tracking-[.24em] text-white/30">Control room</div><h2 className="mt-2 font-display text-5xl uppercase leading-none sm:text-7xl">All rooms.</h2></div><button type="button" onClick={load} className="border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.18em] text-white/45">Refresh</button></div>
         {loading ? <div className="mt-5 border border-white/8 p-8 text-sm text-white/35">Loading scrims…</div> : scrims.length === 0 ? <div className="mt-5 border border-white/8 p-8 text-sm text-white/35">No scrims yet. Add the first room above.</div> : <div className="mt-5 space-y-3">{scrims.map((scrim) => <article key={scrim.id} className="border border-white/8 bg-[#101216] p-5"><div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-center"><div><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/25">{fmt(scrim.scheduled_at)} / {scrim.format}</div><div className="mt-2 text-xl font-semibold">SQUAD.25 <span className="text-white/20">vs</span> {scrim.opponent_name}</div></div><div className="flex flex-wrap gap-2 text-[9px] uppercase tracking-[.15em]"><span className="border border-white/10 px-2 py-1 text-white/45">{scrim.status}</span><span className={scrim.visibility === 'PUBLIC' ? 'border border-[#d7ff43]/20 px-2 py-1 text-[#d7ff43]' : 'border border-white/10 px-2 py-1 text-white/30'}>{scrim.visibility}</span>{scrim.result_for !== null && <span className="border border-white/10 px-2 py-1 text-white/60">{scrim.result_for} — {scrim.result_against}</span>}</div><div className="flex gap-2 lg:justify-end"><button type="button" onClick={() => edit(scrim)} className="border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.16em] text-white/55">Edit</button><button type="button" onClick={() => void remove(scrim.id)} className="border border-[#ff6b38]/20 px-3 py-2 text-[9px] uppercase tracking-[.16em] text-[#ff8d68]">Delete</button></div></div>{scrim.admin_note && <div className="mt-4 border-t border-white/8 pt-4 text-xs leading-6 text-white/35">Internal: {scrim.admin_note}</div>}</article>)}</div>}
       </section>
     </div>
