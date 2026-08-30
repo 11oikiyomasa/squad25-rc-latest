@@ -42,7 +42,7 @@ for (const [label, source, needles] of [
   ['legacy public scrims route', legacyPublicPage, ["redirect('/matches')"]],
   ['public content bridge', publicContent, ['MatchCenter']],
   ['match lifecycle UI', matchCenter, ['01 — Live', '02 — Scheduled', '03 — Completed', '04 — Cancelled', 'SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED', 'Countdown', 'event_name', 'recap_url', 'media_url']],
-  ['match data source', scrims, ['ScrimStatus', "'CANCELLED'", 'event_name', 'recap_url', 'media_url', 'visibility', "status = 'CANCELLED'"]],
+  ['match data source', scrims, ['ScrimStatus', "'CANCELLED'", 'event_name', 'recap_url', 'media_url', "eq('visibility', 'PUBLIC')"]],
   ['admin API', adminApi, ['ensureAdmin', 'POST', 'PATCH', 'DELETE', 'Invalid lifecycle transition', 'New matches must start as SCHEDULED', 'eventName', 'recapUrl', 'mediaUrl']],
   ['canonical admin matches page', adminMatchesPage, ['requireAdmin', 'ScrimControl']],
   ['legacy admin scrims route', legacyAdminPage, ["redirect('/admin/matches')"]],
