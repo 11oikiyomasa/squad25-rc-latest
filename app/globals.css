@@ -105,6 +105,7 @@ button { cursor: pointer; }
 .ui-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: var(--space-2); border: 1px solid transparent; border-radius: var(--radius-control); padding-inline: var(--space-4); font-size: 10px; font-weight: 900; letter-spacing: .18em; line-height: 1; text-transform: uppercase; text-decoration: none; transition: transform var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) ease, background-color var(--duration-fast) ease, color var(--duration-fast) ease, opacity var(--duration-fast) ease; }
 .ui-button:hover { transform: translateY(-1px); }
 .ui-button:active { transform: translateY(0); }
+.ui-button:disabled { cursor: not-allowed; opacity: .48; transform: none; }
 .ui-button-primary { border-color: var(--acid); background: var(--acid); color: #0b0d0a; }
 .ui-button-primary:hover { background: var(--acid-hover); border-color: var(--acid-hover); }
 .ui-button-secondary { border-color: var(--line-strong); background: transparent; color: rgba(255,255,255,.82); }
@@ -113,6 +114,12 @@ button { cursor: pointer; }
 .ui-button-ghost:hover { border-color: var(--line-soft); color: var(--ink); background: rgba(255,255,255,.025); }
 .ui-button-sm { min-height: 40px; padding-inline: 12px; }
 .ui-button-md { min-height: 44px; padding-inline: 16px; }
+
+.ui-field { min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--panel-deep); color: var(--ink); padding: 0 12px; outline: none; transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease; }
+.ui-field::placeholder { color: rgba(255,255,255,.25); }
+.ui-field:hover { border-color: var(--line-strong); }
+.ui-field:focus { border-color: color-mix(in srgb, var(--acid) 45%, transparent); background: var(--panel); }
+.ui-field:disabled { cursor: not-allowed; opacity: .5; }
 
 .ui-empty { display: grid; min-height: 220px; place-items: center; border: 1px solid var(--line); background: var(--panel); padding: var(--space-9) var(--space-6); text-align: center; }
 .ui-empty-mark { width: 40px; height: 1px; margin-bottom: var(--space-4); background: var(--acid); }
