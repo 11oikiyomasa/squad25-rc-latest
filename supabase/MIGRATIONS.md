@@ -10,14 +10,17 @@ Migration markers for the historical versions that were already applied in produ
 
 The publish migration at `20260828201517_atomic_admin_publish.sql` contains the production-final `SECURITY INVOKER` implementation and its restricted execute grant. The later production hardening/revoke versions remain as markers because their final state is already consolidated there.
 
-Recruitment and scrims use the migration versions recorded by the connected production database:
+Recruitment and scrims use the migration versions recorded by the connected production database, followed by security/performance hardening:
 
 - `20260829122711_add_player_recruitment_applications.sql`
 - `20260829132004_add_scrims.sql`
 - `20260830084031_harden_recruitment_rate_limit.sql`
 - `20260830084158_align_recruitment_contact_rate_index.sql`
+- `20260830085041_harden_recruitment_submission_security.sql`
+- `20260830085109_align_scrims_rls_policies.sql`
+- `20260830085232_restore_recruitment_invoker_insert_access.sql`
 
-The connected production project was re-checked during this reconciliation and currently reports the same canonical migration sequence plus the recruitment hardening migrations above. Because each production migration version is represented explicitly in Git, deployment should use the normal `supabase db push` path rather than direct SQL or blind history repair.
+The connected production project was re-checked during this reconciliation and currently reports the same canonical migration sequence. Production recruitment submission now uses an invoker-only public RPC plus a private trigger for privileged rate-limit state; the direct INSERT privilege is retained because an invoker function must execute with its caller's table permissions, while RLS constrains the row shape.
 
 ## Fresh project
 
