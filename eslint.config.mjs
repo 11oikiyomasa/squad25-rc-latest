@@ -5,6 +5,18 @@ import nextTs from 'eslint-config-next/typescript';
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // These effects intentionally hydrate browser-only/local state after mount.
+    // Keep the exception narrow; the rule remains active everywhere else.
+    files: [
+      'components/admin-preview.tsx',
+      'components/admin-studio.tsx',
+      'components/member-modal.tsx',
+    ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
   globalIgnores([
     '.next/**',
     'out/**',
