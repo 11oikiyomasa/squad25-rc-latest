@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   description: 'Apply to trial for the No Flaws MLBB squad.',
   alternates: { canonical: '/recruitment' },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: 'Player Recruitment | No Flaws',
+    description: 'Apply to trial for the No Flaws MLBB squad.',
+    url: 'https://squad25-rc-latest.vercel.app/recruitment',
+    type: 'website',
+  },
 };
 
 export default function RecruitmentPage() {
