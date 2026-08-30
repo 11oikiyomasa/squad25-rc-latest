@@ -64,6 +64,7 @@ for (const file of ['proxy.ts', 'app/login/page.tsx', 'app/login/actions.ts', 'a
   assert(fs.existsSync(path.join(root, file)), `Missing production auth/content file: ${file}`);
 }
 assert(!ts || Boolean(ts.version), 'TypeScript compiler unavailable for syntax verification');
+assert(read('SUPABASE_SCHEMA.sql').includes('IMPORTANT: supabase/migrations/ is the canonical source of truth.'), 'Supabase schema snapshot is not marked as non-canonical');
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.admin_users'), 'Admin SQL model is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('number text not null'), 'Member number column is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('accent text not null'), 'Member accent column is missing');
@@ -72,14 +73,40 @@ assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.s
 assert(read('SUPABASE_SCHEMA.sql').includes('create table if not exists public.gallery_items'), 'Gallery SQL model is missing');
 assert(/create policy "[^"]+" on public\.members for all using \(private\.is_admin\(\)\) with check \(private\.is_admin\(\)\)/i.test(read('SUPABASE_SCHEMA.sql')), 'Admin RLS policy for member management is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes("bucket_id = 'squad-media'"), 'Storage policy/bucket is missing');
-assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828010000_align_content_schema.sql')), 'Schema alignment migration is missing');
-assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828011000_remove_unused_montage_index.sql')), 'Index cleanup migration is missing');
-assert(fs.existsSync(path.join(root, 'supabase', 'migrations', '20260828012000_restore_montage_fk_index.sql')), 'Index restore migration is missing');
-assert(fs.existsSync(path.join(root, 'supabase', 'migrations')), 'Supabase migrations directory is missing');
-assert(read('SUPABASE_SCHEMA.sql').includes('private.is_admin()'), 'Private admin authorization helper is missing');
 assert(read('SUPABASE_SCHEMA.sql').includes('security invoker'), 'Transactional publish should use SECURITY INVOKER');
-assert(!read('supabase/migrations/20260829030000_atomic_admin_publish.sql').includes('security definer'), 'Atomic publish migration still uses SECURITY DEFINER');
 assert(!read('SUPABASE_SCHEMA.sql').includes('public.is_admin()'), 'Exposed public admin authorization helper remains');
+
+const migrationsDir = path.join(root, 'supabase', 'migrations');
+assert(fs.existsSync(migrationsDir), 'Supabase migrations directory is missing');
+const expectedMigrations = [
+  '20260827185426_create_squad_content.sql',
+  '20260827185455_fix_member_status_constraint.sql',
+  '20260827185504_seed_squad_members_retry.sql',
+  '20260827185604_create_squad_media_storage.sql',
+  '20260827185648_align_squad_settings_content_model.sql',
+  '20260827185818_add_montage_content_key.sql',
+  '20260827185830_add_montage_duration.sql',
+  '20260827185903_harden_admin_authorization_function_v2.sql',
+  '20260827185950_optimize_rls_and_indexes.sql',
+  '20260827190636_align_member_display_columns.sql',
+  '20260827190739_remove_unused_montage_index.sql',
+  '20260827190755_restore_montage_fk_index.sql',
+  '20260828201517_atomic_admin_publish.sql',
+  '20260828202607_harden_atomic_publish_security.sql',
+  '20260828202659_revoke_public_publish_execute.sql',
+  '20260829122711_add_player_recruitment_applications.sql',
+  '20260829132004_add_scrims.sql',
+];
+const actualMigrations = fs.readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
+assert(JSON.stringify(actualMigrations) === JSON.stringify(expectedMigrations), 'Supabase migration set drifted from the reconciled production history');
+const migrationSql = actualMigrations.map((file) => read(path.join('supabase', 'migrations', file))).join('\n');
+assert(migrationSql.includes('create table if not exists public.recruitment_applications'), 'Recruitment table is missing from canonical migrations');
+assert(migrationSql.includes('create table if not exists public.scrims'), 'Scrims table is missing from canonical migrations');
+assert(migrationSql.includes('security invoker'), 'Canonical migrations lost SECURITY INVOKER publish behavior');
+assert(migrationSql.includes('revoke all on function public.publish_squad_content(jsonb) from public'), 'Canonical migrations lost restricted publish execute grants');
+assert(read('README.md').includes('supabase/migrations/` is the **canonical database source of truth**'), 'README does not identify migrations as canonical');
+assert(read('README.md').includes('SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` are retained as **manual compatibility snapshots only**'), 'README still presents SQL snapshots as a provisioning source');
+assert(read('supabase/MIGRATIONS.md').includes('canonical source of truth'), 'Repository migration policy document is missing');
 const publicSource = read('components/member-modal.tsx');
 const memberPageSource = read('app/member/[id]/page.tsx');
 const homeSource = read('components/home-content.tsx');
@@ -91,12 +118,11 @@ assert(memberPageSource.includes('cuts public') && memberPageSource.includes('pu
 assert(!homeSource.includes('{member.montages.length} cuts'), 'Legacy roster cards still count unpublished montage placeholders');
 assert(homeSource.includes('No public cuts'), 'Legacy roster component lacks an explicit empty state for unpublished montage content');
 assert(landingSource.includes('members.slice(0, 6)'), 'Curated homepage must cap featured roster at six players');
-assert(pageSource.includes("HomeLanding") && !pageSource.includes("HomeContent"), 'Homepage is still wired to the legacy roster-heavy component');
+assert(pageSource.includes('HomeLanding') && !pageSource.includes('HomeContent'), 'Homepage is still wired to the legacy roster-heavy component');
 assert(read('app/sitemap.ts').includes(`${'/roster'}`) && read('app/sitemap.ts').includes(`${'/recruitment'}`), 'Sitemap is missing roster or recruitment routes');
 const globalCss = read('app/globals.css');
 assert(globalCss.includes('var(--font-display)') && globalCss.includes('prefers-reduced-motion'), 'Typography/accessibility hardening missing');
 assert(globalCss.includes('scroll-padding-top: 5rem'), 'Sticky-header anchor offset is missing');
-assert(read('supabase/migrations/20260829030000_atomic_admin_publish.sql').includes('publish_squad_content'), 'Atomic publish migration is missing');
 const seoFiles = [read('app/layout.tsx'), read('app/robots.ts'), read('app/sitemap.ts'), read('.env.example')].join('\n');
 assert(!seoFiles.includes('andregsman.eu.org'), 'Deprecated custom domain still referenced by active SEO configuration');
 assert(seoFiles.includes('squad25-rc-latest.vercel.app'), 'Vercel canonical URL is missing from active SEO configuration');
@@ -111,6 +137,7 @@ console.log(`- Unique nicknames: ${new Set(names).size}/${names.length}`);
 console.log(`- Member assets: ${names.length}/${names.length}`);
 console.log(`- Gallery assets: ${galleryAssets.length}`);
 console.log(`- TS/TSX syntax: ${sourceFiles.length} files parsed`);
+console.log(`- Supabase migrations: ${actualMigrations.length}/${expectedMigrations.length}`);
 console.log('- Auth/API/schema: present');
 console.log('- Routes/config: present');
 console.log('- Curated homepage roster: 6 max');
