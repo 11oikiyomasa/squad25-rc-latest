@@ -13,12 +13,12 @@ for (const file of [
   'app/admin/recruitment/page.tsx',
   'components/recruitment-inbox.tsx',
   'app/api/admin/recruitment/route.ts',
-  'supabase/migrations/20260829040000_add_player_recruitment_applications.sql',
+  'supabase/migrations/20260829122711_add_player_recruitment_applications.sql',
 ]) {
   assert(fs.existsSync(path.join(root, file)), `Missing recruitment file: ${file}`);
 }
 
-const migration = read('supabase/migrations/20260829040000_add_player_recruitment_applications.sql');
+const migration = read('supabase/migrations/20260829122711_add_player_recruitment_applications.sql');
 assert(migration.includes('create table if not exists public.recruitment_applications'), 'Recruitment table migration is missing');
 assert(migration.includes("for insert\nto anon"), 'Anonymous recruitment insert policy is missing');
 assert(migration.includes('private.is_admin()'), 'Admin recruitment authorization is missing');
