@@ -10,8 +10,13 @@ export async function requireAdmin() {
 
   if (error || !subject) redirect('/login?error=not_authenticated&next=%2Fadmin');
 
-  const { data: admin } = await supabase.from('admin_users').select('user_id').eq('user_id', subject).maybeSingle();
-  if (!admin) redirect('/login?error=not_admin&next=%2Fadmin');
+  const { data: admin } = await supabase
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', subject)
+    .maybeSingle();
+
+  if (!admin) redirect('/403');
 
   return { configured: true as const, userId: subject };
 }
