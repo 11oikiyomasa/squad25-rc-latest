@@ -7,11 +7,12 @@ export default defineConfig([
   ...nextTs,
   {
     // These effects intentionally hydrate browser-only/local state after mount.
-    // Keep the exception narrow; the rule remains active everywhere else.
+    // Keep the exceptions narrow; the rule remains active everywhere else.
     files: [
       'components/admin-preview.tsx',
       'components/admin-studio.tsx',
       'components/member-modal.tsx',
+      'components/match-center.tsx',
     ],
     rules: {
       'react-hooks/set-state-in-effect': 'off',
