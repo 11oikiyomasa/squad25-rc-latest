@@ -8,14 +8,17 @@ export type Scrim = {
   scheduled_at: string;
   opponent_name: string;
   format: 'BO1' | 'BO2' | 'BO3' | 'BO5';
+  event_name: string;
   status: ScrimStatus;
   visibility: ScrimVisibility;
   result_for: number | null;
   result_against: number | null;
   public_note: string;
+  recap_url: string | null;
+  media_url: string | null;
 };
 
-const selectFields = 'id,scheduled_at,opponent_name,format,status,visibility,result_for,result_against,public_note';
+export const selectFields = 'id,scheduled_at,opponent_name,format,event_name,status,visibility,result_for,result_against,public_note,recap_url,media_url';
 
 export async function getPublicScrims(): Promise<Scrim[]> {
   if (!isSupabaseConfigured()) return [];
@@ -24,7 +27,6 @@ export async function getPublicScrims(): Promise<Scrim[]> {
     .from('scrims')
     .select(selectFields)
     .eq('visibility', 'PUBLIC')
-    .neq('status', 'CANCELLED')
     .order('scheduled_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as Scrim[];
