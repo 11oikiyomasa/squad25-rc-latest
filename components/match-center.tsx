@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { Scrim } from '@/lib/scrims';
 
 const WIB = 'Asia/Jakarta';
@@ -56,7 +56,7 @@ function Countdown({ target }: { target: string }) {
   return <span aria-live="polite">T−{days > 0 ? `${days}d ` : ''}{hh}:{mm}:{ss}</span>;
 }
 
-function StatePill({ children, live = false }: { children: React.ReactNode; live?: boolean }) {
+function StatePill({ children, live = false }: { children: ReactNode; live?: boolean }) {
   return <span className="inline-flex items-center gap-2 border border-white/10 bg-black/10 px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-[.17em] text-white/55">{live && <span className="h-1.5 w-1.5 rounded-full bg-[var(--acid)] shadow-[0_0_12px_var(--acid)]" aria-hidden="true" />}{children}</span>;
 }
 
@@ -108,7 +108,7 @@ export default function MatchCenter({ scrims }: { scrims: Scrim[] }) {
 
         <section className="mt-10" aria-labelledby="scheduled-matches-title">
           <div className="mb-4 flex items-end justify-between gap-4"><div><div className="ui-eyebrow">02 — Scheduled</div><h3 id="scheduled-matches-title" className="mt-1 font-display text-4xl uppercase">Next rooms.</h3></div>{next && countdownUseful && <StatePill><Countdown target={next.scheduled_at}/></StatePill>}</div>
-          {scheduled.length === 0 ? <StateEmpty eyebrow="Schedule empty" title="No upcoming room." description="Nothing public is scheduled right now. The next room will appear here as soon as the control room publishes one." /> : <div className="space-y-3">{scheduled.slice(0, 6).map((scrim, index) => <article key={scrim.id} className="border border-white/8 bg-[var(--panel-deep)] p-5 sm:p-6"><div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center"><div><div className="flex flex-wrap gap-2"><StatePill>SCHEDULED</StatePill><StatePill>{scrim.format}</StatePill><StatePill>{scrim.event_name}</StatePill></div><div className="mt-4 font-mono text-[10px] uppercase tracking-[.18em] text-white/35">{formatDateTime(scrim.scheduled_at)}</div><div className="mt-2 font-display text-3xl uppercase sm:text-4xl">SQUAD.25 <span className="text-white/20">vs</span> <span className="text-[var(--acid)]">{scrim.opponent_name}</span></div><p className="mt-2 max-w-2xl text-sm leading-6 text-white/35">{scrim.event_name}{scrim.public_note ? ` / ${scrim.public_note}` : ''}</p></div><div className="flex flex-col gap-2 lg:min-w-44 lg:text-right">{index === 0 && countdownUseful && <div className="font-mono text-xs font-black uppercase tracking-[.14em] text-[var(--acid)]"><Countdown target={scrim.scheduled_at}/></div>}{index === 0 && staleScheduled && <div className="font-mono text-[9px] font-black uppercase tracking-[.16em] text-[#ffb197]">Time passed / status pending</div>}<div className="font-mono text-[9px] uppercase tracking-[.16em] text-white/25">Scheduled kickoff</div></div></div></article>)}</div>}
+          {scheduled.length === 0 ? <StateEmpty eyebrow="Schedule empty" title="No upcoming room." description="Nothing public is scheduled right now. The next room will appear here as soon as the control room publishes one." /> : <div className="space-y-3">{scheduled.slice(0, 6).map((scrim, index) => <article key={scrim.id} className="border border-white/8 bg-[var(--panel-deep)] p-5 sm:p-6"><div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center"><div><div className="flex flex-wrap gap-2"><StatePill>SCHEDULED</StatePill><StatePill>{scrim.format}</StatePill><StatePill>{scrim.event_name}</StatePill></div><div className="mt-4 font-mono text-[10px] uppercase tracking-[.18em] text-white/35">{formatDateTime(scrim.scheduled_at)}</div><div className="mt-2 font-display text-3xl uppercase sm:text-4xl">SQUAD.25 <span className="text-white/20">vs</span> <span className="text-[var(--acid)]">{scrim.opponent_name}</span></div><p className="mt-2 max-w-2xl text-sm leading-6 text-white/35">{scrim.public_note || 'Scheduled match. Details will update when the room goes live.'}</p></div><div className="flex flex-col gap-2 lg:min-w-44 lg:text-right">{index === 0 && countdownUseful && <div className="font-mono text-xs font-black uppercase tracking-[.14em] text-[var(--acid)]"><Countdown target={scrim.scheduled_at}/></div>}{index === 0 && staleScheduled && <div className="font-mono text-[9px] font-black uppercase tracking-[.16em] text-[#ffb197]">Time passed / status pending</div>}<div className="font-mono text-[9px] uppercase tracking-[.16em] text-white/25">{scrim.event_name}</div></div></div></article>)}</div>}
         </section>
 
         <section className="mt-10" aria-labelledby="completed-matches-title">
