@@ -12,13 +12,12 @@ const messages: Record<string, string> = {
   auth_failed: 'Sesi autentikasi gagal dibuat.',
   auth_unavailable: 'Layanan autentikasi belum tersedia.',
   not_authenticated: 'Silakan login terlebih dahulu.',
-  not_admin: 'Akun ini belum memiliki akses admin.',
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const errorKey = typeof params.error === 'string' ? params.error : '';
-  const next = typeof params.next === 'string' && params.next.startsWith('/') ? params.next : '/admin';
+  const next = typeof params.next === 'string' && params.next.startsWith('/') && !params.next.startsWith('//') ? params.next : '/admin';
   const configured = isSupabaseConfigured();
 
   return (
@@ -41,7 +40,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </form>
         )}
 
-        {errorKey && <div className="mt-4 border border-white/10 px-4 py-3 text-xs text-white/55">{messages[errorKey] ?? 'Terjadi kesalahan.'}</div>}
+        {errorKey && <div role="alert" className="mt-4 border border-white/10 px-4 py-3 text-xs text-white/55">{messages[errorKey] ?? 'Terjadi kesalahan.'}</div>}
       </div>
     </main>
   );
