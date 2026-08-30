@@ -1,4 +1,9 @@
--- SQUAD.25 production schema. Idempotent and aligned with the connected Supabase project.
+-- SQUAD.25 compatibility schema snapshot.
+--
+-- IMPORTANT: supabase/migrations/ is the canonical source of truth.
+-- Do not use this snapshot as the primary provisioning workflow. New schema
+-- changes must be added as migrations so clean environments and production
+-- migration history remain reproducible.
 
 create table if not exists public.squad_settings (
   id integer primary key default 1 check (id = 1),
@@ -128,8 +133,6 @@ create policy "Admins can update squad media" on storage.objects for update usin
 drop policy if exists "Admins can delete squad media" on storage.objects;
 create policy "Admins can delete squad media" on storage.objects for delete using (bucket_id = 'squad-media' and private.is_admin());
 
--- Restrict upload type/size through application validation. The bucket is intentionally public for optimized profile/media delivery.
-
 create or replace function public.publish_squad_content(payload jsonb)
 returns jsonb
 language plpgsql
@@ -150,62 +153,21 @@ begin
   if not private.is_admin() then
     raise exception 'Admin access required.' using errcode = '42501';
   end if;
-
-  if jsonb_typeof(payload) <> 'object' then
-    raise exception 'Invalid content payload.' using errcode = '22023';
-  end if;
-  if jsonb_typeof(payload->'profile') <> 'object' then
-    raise exception 'Content must contain a profile.' using errcode = '22023';
-  end if;
-  if jsonb_typeof(payload->'members') <> 'array' then
-    raise exception 'Content must contain a members array.' using errcode = '22023';
-  end if;
-
+  if jsonb_typeof(payload) <> 'object' then raise exception 'Invalid content payload.' using errcode = '22023'; end if;
+  if jsonb_typeof(payload->'profile') <> 'object' then raise exception 'Content must contain a profile.' using errcode = '22023'; end if;
+  if jsonb_typeof(payload->'members') <> 'array' then raise exception 'Content must contain a members array.' using errcode = '22023'; end if;
   select jsonb_array_length(payload->'members') into member_count;
-  if member_count <> 25 then
-    raise exception 'Content must contain exactly 25 members.' using errcode = '22023';
-  end if;
-
+  if member_count <> 25 then raise exception 'Content must contain exactly 25 members.' using errcode = '22023'; end if;
   insert into squad_settings (id, name, tagline, description, logo_url, season, instagram_url, tiktok_url, youtube_url, discord_url, updated_at)
-  values (
-    1,
-    left(coalesce(payload->'profile'->>'name',''), 80),
-    left(coalesce(payload->'profile'->>'tagline',''), 180),
-    '', null,
-    left(coalesce(payload->'profile'->>'season',''), 20),
-    nullif(left(coalesce(payload->'profile'->>'instagram','#'), 300), ''),
-    nullif(left(coalesce(payload->'profile'->>'tiktok','#'), 300), ''),
-    nullif(left(coalesce(payload->'profile'->>'youtube','#'), 300), ''),
-    null,
-    now_ts
-  )
-  on conflict (id) do update set
-    name = excluded.name,
-    tagline = excluded.tagline,
-    season = excluded.season,
-    instagram_url = excluded.instagram_url,
-    tiktok_url = excluded.tiktok_url,
-    youtube_url = excluded.youtube_url,
-    updated_at = now_ts;
-
+  values (1, left(coalesce(payload->'profile'->>'name',''),80), left(coalesce(payload->'profile'->>'tagline',''),180), '', null, left(coalesce(payload->'profile'->>'season',''),20), nullif(left(coalesce(payload->'profile'->>'instagram','#'),300),''), nullif(left(coalesce(payload->'profile'->>'tiktok','#'),300),''), nullif(left(coalesce(payload->'profile'->>'youtube','#'),300),''), null, now_ts)
+  on conflict (id) do update set name=excluded.name, tagline=excluded.tagline, season=excluded.season, instagram_url=excluded.instagram_url, tiktok_url=excluded.tiktok_url, youtube_url=excluded.youtube_url, updated_at=now_ts;
   for m in select * from jsonb_array_elements(payload->'members') loop
-    if coalesce(m->>'id','') = '' then
-      raise exception 'Member ID is required.' using errcode = '22023';
-    end if;
+    if coalesce(m->>'id','') = '' then raise exception 'Member ID is required.' using errcode = '22023'; end if;
     select id into db_member_id from members where slug = m->>'id' limit 1;
-    if db_member_id is null then
-      raise exception 'Member slug not found: %', m->>'id' using errcode = '23503';
-    end if;
-    if coalesce(m->>'nickname','') = '' or coalesce(m->>'name','') = '' then
-      raise exception 'Member nickname and name are required: %', m->>'id' using errcode = '22023';
-    end if;
-    if coalesce(m->>'role','') not in ('EXP','JUNGLE','MID','GOLD','ROAM') then
-      raise exception 'Invalid member role: %', m->>'id' using errcode = '22023';
-    end if;
-    if coalesce(m->>'status','') not in ('ACTIVE','BENCH','CAPTAIN') then
-      raise exception 'Invalid member status: %', m->>'id' using errcode = '22023';
-    end if;
-
+    if db_member_id is null then raise exception 'Member slug not found: %', m->>'id' using errcode = '23503'; end if;
+    if coalesce(m->>'nickname','') = '' or coalesce(m->>'name','') = '' then raise exception 'Member nickname and name are required: %', m->>'id' using errcode = '22023'; end if;
+    if coalesce(m->>'role','') not in ('EXP','JUNGLE','MID','GOLD','ROAM') then raise exception 'Invalid member role: %', m->>'id' using errcode = '22023'; end if;
+    if coalesce(m->>'status','') not in ('ACTIVE','BENCH','CAPTAIN') then raise exception 'Invalid member status: %', m->>'id' using errcode = '22023'; end if;
     update members set
       number = left(coalesce(m->>'number', '00'), 10),
       nickname = left(m->>'nickname', 30),
@@ -220,42 +182,22 @@ begin
       updated_at = now_ts
     where id = db_member_id;
     saved_members := saved_members + 1;
-
     for mt in select * from jsonb_array_elements(coalesce(m->'montages','[]'::jsonb)) with ordinality as x(item, ordinality) loop
       if coalesce(mt.item->>'title','') = '' then continue; end if;
       desired_keys := array_append(desired_keys, (m->>'id') || ':' || mt.ordinality::text);
       insert into montages (content_key, member_id, title, hero, duration, youtube_id, description, sort_order)
-      values (
-        (m->>'id') || ':' || mt.ordinality::text,
-        db_member_id,
-        left(mt.item->>'title',120),
-        left(coalesce(mt.item->>'hero',m->>'hero',''),50),
-        left(coalesce(mt.item->>'duration','00:00'),20),
-        left(coalesce(mt.item->>'youtubeId',''),100),
-        left(coalesce(mt.item->>'description',''),500),
-        mt.ordinality - 1
-      )
-      on conflict (content_key) do update set
-        member_id = excluded.member_id,
-        title = excluded.title,
-        hero = excluded.hero,
-        duration = excluded.duration,
-        youtube_id = excluded.youtube_id,
-        description = excluded.description,
-        sort_order = excluded.sort_order;
+      values ((m->>'id') || ':' || mt.ordinality::text, db_member_id, left(mt.item->>'title',120), left(coalesce(mt.item->>'hero',m->>'hero',''),50), left(coalesce(mt.item->>'duration','00:00'),20), left(coalesce(mt.item->>'youtubeId',''),100), left(coalesce(mt.item->>'description',''),500), mt.ordinality - 1)
+      on conflict (content_key) do update set member_id=excluded.member_id, title=excluded.title, hero=excluded.hero, duration=excluded.duration, youtube_id=excluded.youtube_id, description=excluded.description, sort_order=excluded.sort_order;
       saved_montages := saved_montages + 1;
     end loop;
   end loop;
-
   if coalesce(array_length(desired_keys, 1), 0) = 0 then
     delete from montages;
   else
     delete from montages where not (content_key = any(desired_keys));
   end if;
-
   return jsonb_build_object('ok', true, 'savedMembers', saved_members, 'savedMontages', saved_montages);
 end;
 $$;
-
 revoke all on function public.publish_squad_content(jsonb) from public;
 grant execute on function public.publish_squad_content(jsonb) to authenticated;
