@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "eslint .",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "node scripts/verify.mjs && node scripts/verify-recruitment.mjs && node scripts/verify-scrims.mjs && node scripts/verify-agent-contract.mjs"
   },
@@ -22,6 +24,9 @@
     "typescript": "^5.9.3",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7"
+    "@types/react-dom": "^19.1.7",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.3",
+    "vitest": "^4.1.10"
   }
 }

@@ -37,6 +37,10 @@ jobs:
           grep -q 'OPENAI_API_KEY' .github/workflows/ai-pr-review.yml
           grep -q 'GEMINI_API_KEY' .github/workflows/ai-pr-review.yml
           grep -q 'AI_REVIEW_PROVIDER: gemini' .github/workflows/ai-pr-review.yml
+      - name: Lint
+        run: npm run lint
+      - name: Test suite
+        run: npm test
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
