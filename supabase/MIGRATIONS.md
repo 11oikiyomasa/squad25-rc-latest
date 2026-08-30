@@ -2,25 +2,26 @@
 
 `supabase/migrations/` is the canonical source of truth for database schema and database-owned security behavior.
 
-## Reconciled history
+## Current production reconciliation
 
-The connected production project had older migration entries that were not all present in Git. The repository now uses a reconciled baseline at `20260827185426_create_squad_content.sql` that captures the complete core schema, RLS, storage setup, publish authorization, and starter content needed for a clean bootstrap.
+The connected production project is `wyjsosamlkbwksrslona` in `ap-northeast-1`. Its migration history is older in places than the current repository migration filenames because earlier work reconciled production state through several idempotent migrations. Do not assume a filename match alone proves schema equivalence.
 
-Migration markers for the historical versions that were already applied in production are retained as explicit files. These marker files are intentionally no-op because their resulting state is already represented by the reconciled baseline. This avoids inventing a second, divergent historical schema while keeping the migration version timeline explicit.
+As of the Phase 0 remediation audit, production contains the Phase 7 recruitment schema and the following security state has been verified directly:
 
-The publish migration at `20260828201517_atomic_admin_publish.sql` contains the production-final `SECURITY INVOKER` implementation and its restricted execute grant. The later production hardening/revoke versions remain as markers because their final state is already consolidated there.
+- `public.recruitment_applications` has no INSERT/UPDATE/DELETE privilege for `anon` or `authenticated`.
+- `public.recruitment_application_notes` has no INSERT/UPDATE/DELETE privilege for `anon` or `authenticated`.
+- `submit_recruitment_application_v7(jsonb,text)` is executable only by `service_role`.
+- Recruitment resumes are stored in a private storage bucket with PDF-only and 5 MiB limits.
+- Public recruitment-job reads are limited to active, non-expired jobs for `anon`.
+- RLS remains enabled on the application, notes, jobs, audit, roster, media, and match tables.
 
-Recruitment and scrims use the migration versions recorded by the connected production database, followed by security/performance hardening:
+The Phase 0 security/performance remediation applied to production is recorded in Git as:
 
-- `20260829122711_add_player_recruitment_applications.sql`
-- `20260829132004_add_scrims.sql`
-- `20260830084031_harden_recruitment_rate_limit.sql`
-- `20260830084158_align_recruitment_contact_rate_index.sql`
-- `20260830085041_harden_recruitment_submission_security.sql`
-- `20260830085109_align_scrims_rls_policies.sql`
-- `20260830085232_restore_recruitment_invoker_insert_access.sql`
+- `20260830202148_phase0_security_and_performance_hardening.sql`
 
-The connected production project was re-checked during this reconciliation and currently reports the same canonical migration sequence. Production recruitment submission now uses an invoker-only public RPC plus a private trigger for privileged rate-limit state; the direct INSERT privilege is retained because an invoker function must execute with its caller's table permissions, while RLS constrains the row shape.
+Production also contains earlier equivalent Phase 7 migration entries with different timestamps (`20260830193914`, `20260830193924`, `20260830193934`, `20260830193939`, `20260830195557`, `20260830201946`). These are part of the reconciled remote history and must not be blindly duplicated or reverted.
+
+The current repository also contains later Phase 7 migration files under `2026083102xxxx`. Their final state was compared against the live schema during the baseline audit. Before any future `supabase db push`, reconcile migration history deliberately and use migration repair only after proving that the target schema already matches the intended migration state.
 
 ## Fresh project
 
@@ -34,26 +35,29 @@ This applies the canonical migration set in timestamp order.
 
 ## Existing environments
 
-Before deploying this repository to an environment other than the connected production project:
+Before deploying this repository to an existing environment:
 
 ```bash
 supabase migration list
 ```
 
-The local migration versions must match the remote migration history before `supabase db push`. If an environment contains repository-only historical versions from an older unreconciled checkout, stop and reconcile that environment deliberately; do not blindly revert or re-apply migrations against live data.
+Compare local and remote versions and then compare the actual schema. If an environment contains repository-only historical versions or remote-only versions from an earlier reconciliation, stop and investigate. Do not blindly re-apply or revert migrations against live data.
 
-Use `supabase migration repair` only when the database state is already correct and only the migration tracking record is wrong. Repair changes migration history; it does not run SQL.
+Use `supabase migration repair` only when the database state is already correct and only the migration tracking record needs reconciliation. Repair changes migration history; it does not execute SQL.
 
-## Local validation
+## Security boundary
 
-For schema changes, create the migration with the Supabase CLI, then reset the local database before committing it:
+Public recruitment submissions are intentionally server-mediated:
 
-```bash
-supabase migration new <change_description>
-supabase db reset
-npm run verify
+```text
+Browser
+  -> Next.js /api/recruitment
+  -> Turnstile + payload/PDF validation + rate limiting
+  -> private resume upload
+  -> service_role submission RPC
+  -> database
 ```
 
-Do not edit the remote schema directly as the normal development workflow. Supabase tracks applied migration versions separately from Git; direct remote schema changes create drift that must be explicitly reconciled. The supported recovery path is to inspect `supabase migration list` and use `supabase db pull` or `supabase migration repair` as appropriate.
+Do not restore direct PostgREST INSERT access to `recruitment_applications` or `recruitment_application_notes` as a workaround.
 
-`SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` remain compatibility snapshots for manual inspection or recovery. Do not maintain new schema changes in those files instead of adding a migration.
+`SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` remain compatibility snapshots for manual inspection or recovery. They are not the canonical migration source.
