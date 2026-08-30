@@ -1,0 +1,2 @@
+-- Montage content-key schema is reconciled into 20260827185426_create_squad_content.sql.
+-- Kept as a migration marker so the repository matches production migration history.
