@@ -1,4 +1,8 @@
--- Idempotent content seed for SQUAD.25. Run after SUPABASE_SCHEMA.sql.
+-- SQUAD.25 compatibility seed snapshot.
+--
+-- IMPORTANT: supabase/migrations/ is the canonical source of truth.
+-- The reconciled baseline migration already includes starter content for a
+-- clean bootstrap. Keep this file only for manual recovery/inspection.
 
 insert into public.squad_settings (id, name, tagline, season)
 values (1, 'SQUAD.25', 'Twenty-five players. One legacy.', '2026')
