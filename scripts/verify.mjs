@@ -113,6 +113,18 @@ assert(migrationSql.includes('revoke all on function public.publish_squad_conten
 assert(read('README.md').includes('supabase/migrations/` is the **canonical database source of truth**'), 'README does not identify migrations as canonical');
 assert(read('README.md').includes('SUPABASE_SCHEMA.sql` and `SUPABASE_SEED.sql` are retained as **manual compatibility snapshots only**'), 'README still presents SQL snapshots as a provisioning source');
 assert(read('supabase/MIGRATIONS.md').includes('canonical source of truth'), 'Repository migration policy document is missing');
+
+const adminAuth = read('lib/admin-auth.ts');
+assert(adminAuth.includes("redirect('/login?error=not_authenticated&next=%2Fadmin')"), 'Unauthenticated admin users no longer route to login');
+assert(adminAuth.includes("redirect('/403')"), 'Authenticated non-admin users no longer route to access denied');
+assert(!adminAuth.includes("error=not_admin"), 'Admin authorization still loops non-admin users back through login');
+assert(fs.existsSync(path.join(root, 'app', '403', 'page.tsx')), 'Dedicated admin access-denied page is missing');
+const accessDenied = read('app/403/page.tsx');
+assert(accessDenied.includes('403 / Access denied'), 'Access-denied page lacks explicit 403 state');
+assert(accessDenied.includes('href="/login"'), 'Access-denied page lacks alternate-account path');
+const loginSource = read('app/login/page.tsx');
+assert(!loginSource.includes('not_admin:'), 'Login page still presents non-admin authorization as a login error');
+
 const publicSource = read('components/member-modal.tsx');
 const memberPageSource = read('app/member/[id]/page.tsx');
 const homeSource = read('components/home-content.tsx');
@@ -148,3 +160,4 @@ console.log('- Auth/API/schema: present');
 console.log('- Routes/config: present');
 console.log('- Curated homepage roster: 6 max');
 console.log('- SEO canonical: Vercel');
+console.log('- Admin access denial: dedicated 403');
