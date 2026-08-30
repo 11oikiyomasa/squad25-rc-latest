@@ -15,6 +15,8 @@ Recruitment and scrims use the migration versions recorded by the connected prod
 - `20260829122711_add_player_recruitment_applications.sql`
 - `20260829132004_add_scrims.sql`
 
+The connected production project was re-checked during this reconciliation and currently reports these same 17 migration versions. Because the versions already exist remotely, merging this repository change does not require mutating production migration history. Do not run `migration repair` merely because a file was renamed or consolidated; first compare local and remote versions with `supabase migration list`. Supabase documents migration history comparison by migration timestamp/version, and `migration repair` changes the tracking table only.
+
 ## Fresh project
 
 ```bash
@@ -24,6 +26,18 @@ supabase db push
 ```
 
 This applies the canonical migration set in timestamp order.
+
+## Existing environments
+
+Before deploying this repository to an environment other than the connected production project:
+
+```bash
+supabase migration list
+```
+
+The local migration versions must match the remote migration history before `supabase db push`. If an environment contains repository-only historical versions from an older unreconciled checkout, stop and reconcile that environment deliberately; do not blindly revert or re-apply migrations against live data.
+
+Use `supabase migration repair` only when the database state is already correct and only the migration tracking record is wrong. Repair changes migration history; it does not run SQL.
 
 ## Local validation
 
