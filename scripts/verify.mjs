@@ -44,6 +44,21 @@ for (const file of sourceFiles) {
   assert(!/href\s*=\s*["']#["']/.test(source), `Dead CTA href="#" found: ${path.relative(root, file)}`);
 }
 
+for (const file of [
+  'app/page.tsx',
+  'app/roster/page.tsx',
+  'app/matches/page.tsx',
+  'app/media/page.tsx',
+  'app/recruitment/page.tsx',
+  'app/member/[id]/page.tsx',
+  'components/home-landing.tsx',
+  'components/public-nav.tsx',
+  'components/match-center.tsx',
+]) {
+  const source = read(file);
+  assert(!source.includes("'/scrims'") && !source.includes('"/scrims"'), `Canonical public source still references retired /scrims: ${file}`);
+}
+
 const nav = read('components/public-nav.tsx');
 for (const href of ["'/'", "'/roster'", "'/matches'", "'/media'", "'/recruitment'"]) assert(nav.includes(`href: ${href}`), `Public navigation missing ${href}`);
 assert(nav.includes("label: 'Matches'"), 'Public navigation does not use the final Matches label');
