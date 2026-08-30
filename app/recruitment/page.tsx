@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Player Recruitment | No Flaws',
     description: 'Apply to trial for the No Flaws MLBB squad.',
-    url: '/recruitment',
+    url: 'https://squad25-rc-latest.vercel.app/recruitment',
     type: 'website',
   },
 };
