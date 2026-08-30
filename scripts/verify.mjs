@@ -105,7 +105,7 @@ const migrationSql = actualMigrations.map((file) => read(path.join('supabase', '
 assert(migrationSql.includes('create table if not exists public.recruitment_applications'), 'Recruitment table is missing from canonical migrations');
 assert(migrationSql.includes('create table if not exists public.scrims'), 'Scrims table is missing from canonical migrations');
 assert(migrationSql.includes('create table if not exists private.recruitment_rate_limits'), 'Recruitment rate-limit table is missing from canonical migrations');
-assert(migrationSql.includes('create or replace function public.submit_recruitment_application(jsonb, text)'), 'Atomic recruitment submission function is missing from canonical migrations');
+assert(migrationSql.includes('create or replace function public.submit_recruitment_application(payload jsonb, client_ip text)'), 'Atomic recruitment submission function is missing from canonical migrations');
 assert(migrationSql.includes('revoke insert on table public.recruitment_applications from anon, authenticated'), 'Recruitment direct insert grant was not revoked');
 assert(migrationSql.includes('recruitment_applications_contact_norm_created_at_idx'), 'Recruitment contact cooldown index is missing from canonical migrations');
 assert(migrationSql.includes('security invoker'), 'Canonical migrations lost SECURITY INVOKER publish behavior');
