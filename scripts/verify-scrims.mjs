@@ -33,7 +33,7 @@ const sitemap = fs.readFileSync(path.join(root, 'app/sitemap.ts'), 'utf8');
 
 for (const [label, source, needles] of [
   ['loading screen', loading, ['SQUAD.25', 'Public squad archive', 'loading-sweep']],
-  ['canonical public matches page', publicMatchesPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/matches'", 'Match Center']],
+  ['canonical public matches page', publicMatchesPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/matches'", "title: 'Matches — SQUAD.25'"]],
   ['legacy public scrims route', legacyPublicPage, ["redirect('/matches')"]],
   ['public content bridge', publicContent, ['MatchCenter']],
   ['match center UI', matchCenter, ["timeZone: 'Asia/Jakarta'", 'No next match', 'W / L']],
