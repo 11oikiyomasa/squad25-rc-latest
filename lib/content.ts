@@ -1,6 +1,5 @@
 import { gallery as seedGallery, achievements as seedAchievements, members as seedMembers, squadProfile, normalizeYoutubeId, type Member } from '@/data/squad';
 import { createClient as createPublicSupabaseClient } from '@supabase/supabase-js';
-import { isSupabaseConfigured } from '@/lib/supabase/server';
 
 export type ContentSnapshot = {
   profile: typeof squadProfile;
@@ -14,6 +13,10 @@ type MontageRow = { id: string; member_id: string; title: string; hero: string |
 type ProfileRow = { id: number; name: string; tagline: string; season: string; instagram_url: string | null; tiktok_url: string | null; youtube_url: string | null };
 type GalleryRow = { id: string; title: string; caption: string; image_url: string; sort_order: number };
 type AchievementRow = { year: number | null; title: string; description: string; };
+
+function isSupabaseConfigured() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+}
 
 function normalizeAccent(role: Member['role'], value: string): string {
   const accent = value.trim().toLowerCase();
