@@ -1,3 +1,4 @@
+-- Reconciled production-final implementation of atomic admin publishing.
 create or replace function public.publish_squad_content(payload jsonb)
 returns jsonb
 language plpgsql
@@ -26,6 +27,7 @@ begin
   values (1,left(coalesce(payload->'profile'->>'name',''),80),left(coalesce(payload->'profile'->>'tagline',''),180),'',null,left(coalesce(payload->'profile'->>'season',''),20),nullif(left(coalesce(payload->'profile'->>'instagram','#'),300),''),nullif(left(coalesce(payload->'profile'->>'tiktok','#'),300),''),nullif(left(coalesce(payload->'profile'->>'youtube','#'),300),''),null,now_ts)
   on conflict (id) do update set name=excluded.name,tagline=excluded.tagline,season=excluded.season,instagram_url=excluded.instagram_url,tiktok_url=excluded.tiktok_url,youtube_url=excluded.youtube_url,updated_at=now_ts;
   for m in select * from jsonb_array_elements(payload->'members') loop
+    if coalesce(m->>'id','') = '' then raise exception 'Member ID is required.' using errcode = '22023'; end if;
     select id into db_member_id from members where slug = m->>'id' limit 1;
     if db_member_id is null then raise exception 'Member slug not found: %',m->>'id' using errcode='23503'; end if;
     if coalesce(m->>'nickname','')='' or coalesce(m->>'name','')='' then raise exception 'Member nickname and name are required: %',m->>'id' using errcode='22023'; end if;

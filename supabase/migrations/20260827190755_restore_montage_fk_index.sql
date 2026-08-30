@@ -1,0 +1,2 @@
+-- Final montage FK index is already present in the reconciled baseline.
+-- Kept as a migration marker so the repository matches production migration history.
