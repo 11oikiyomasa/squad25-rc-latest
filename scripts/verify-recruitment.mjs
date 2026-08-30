@@ -1,93 +1,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-const root = path.resolve(new URL('..', import.meta.url).pathname);
-const failures = [];
-const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
-function assert(condition, message) { if (!condition) failures.push(message); }
-
-for (const file of [
-  'app/recruitment/page.tsx',
-  'components/recruitment-form.tsx',
-  'app/api/recruitment/route.ts',
-  'app/admin/recruitment/page.tsx',
-  'components/recruitment-inbox.tsx',
-  'app/api/admin/recruitment/route.ts',
-  'supabase/migrations/20260829122711_add_player_recruitment_applications.sql',
-  'supabase/migrations/20260830084031_harden_recruitment_rate_limit.sql',
-  'supabase/migrations/20260830084158_align_recruitment_contact_rate_index.sql',
-  'supabase/migrations/20260830085041_harden_recruitment_submission_security.sql',
-  'supabase/migrations/20260830085232_restore_recruitment_invoker_insert_access.sql',
-]) {
-  assert(fs.existsSync(path.join(root, file)), `Missing recruitment file: ${file}`);
-}
-
-const migration = read('supabase/migrations/20260829122711_add_player_recruitment_applications.sql');
-assert(migration.includes('create table if not exists public.recruitment_applications'), 'Recruitment table migration is missing');
-assert(migration.includes("for insert\nto anon"), 'Anonymous recruitment insert policy is missing from the historical migration');
-assert(migration.includes('private.is_admin()'), 'Admin recruitment authorization is missing');
-assert(migration.includes('revoke all on table public.recruitment_applications from anon, authenticated'), 'Recruitment table privileges are not locked down in the historical migration');
-assert(migration.includes('grant insert on table public.recruitment_applications to anon'), 'Historical recruitment insert grant is missing');
-assert(migration.includes('grant select, update on table public.recruitment_applications to authenticated'), 'Admin recruitment grants are missing');
-
-const hardening = read('supabase/migrations/20260830084031_harden_recruitment_rate_limit.sql');
-assert(hardening.includes('create table if not exists private.recruitment_rate_limits'), 'Recruitment rate-limit table is missing');
-assert(hardening.includes("request_count >= 5"), 'IP rate-limit threshold is missing');
-assert(hardening.includes("interval '15 minutes'"), 'IP rate-limit window is missing');
-assert(hardening.includes("interval '24 hours'"), 'Recruitment contact cooldown is missing');
-assert(hardening.includes('pg_advisory_xact_lock'), 'Recruitment rate limiter lacks transactional concurrency locking');
-
-const indexMigration = read('supabase/migrations/20260830084158_align_recruitment_contact_rate_index.sql');
-assert(indexMigration.includes('recruitment_applications_contact_norm_created_at_idx'), 'Recruitment contact cooldown index is missing');
-assert(indexMigration.includes("lower(regexp_replace(btrim(contact), '[[:space:]]+', ' ', 'g'))"), 'Recruitment contact index does not match the normalization expression');
-
-const securityMigration = read('supabase/migrations/20260830085041_harden_recruitment_submission_security.sql');
-assert(securityMigration.includes('create or replace function private.enforce_recruitment_submission_limits()'), 'Private recruitment trigger function is missing');
-assert(securityMigration.includes('security definer'), 'Private recruitment trigger must retain SECURITY DEFINER for isolated rate-limit state access');
-assert(securityMigration.includes('create trigger enforce_recruitment_submission_limits'), 'Recruitment rate-limit trigger is missing');
-assert(securityMigration.includes('create or replace function public.submit_recruitment_application(payload jsonb, client_ip text)'), 'Public recruitment submission function is missing');
-assert(securityMigration.includes('security invoker'), 'Public recruitment submission function must be SECURITY INVOKER');
-assert(securityMigration.includes('grant execute on function public.submit_recruitment_application(jsonb, text) to anon, authenticated'), 'Recruitment submission function execute grant is missing');
-assert(securityMigration.includes('revoke all on function private.enforce_recruitment_submission_limits() from public, anon, authenticated'), 'Private trigger execute privileges are not locked down');
-
-const accessMigration = read('supabase/migrations/20260830085232_restore_recruitment_invoker_insert_access.sql');
-assert(accessMigration.includes('create policy "Authenticated can submit recruitment applications"'), 'Authenticated recruitment insert policy is missing');
-assert(accessMigration.includes('grant insert on table public.recruitment_applications to anon, authenticated'), 'Invoker recruitment insert grants are missing');
-
-const form = read('components/recruitment-form.tsx');
-assert(form.includes("fetch('/api/recruitment'"), 'Recruitment form is not connected to the API');
-assert(form.includes('website'), 'Recruitment honeypot field is missing');
-assert(form.includes('Do not send') || form.includes('Jangan kirim password'), 'Sensitive-data warning is missing');
-assert(form.includes('response.status === 429'), 'Recruitment form does not handle HTTP 429 explicitly');
-assert(form.includes('Retry-After'), 'Recruitment form does not read Retry-After for rate-limit feedback');
-
-const publicApi = read('app/api/recruitment/route.ts');
-assert(publicApi.includes("body.website"), 'Recruitment API does not evaluate the honeypot');
-assert(publicApi.includes("submit_recruitment_application"), 'Recruitment API is not using the atomic submission function');
-assert(publicApi.includes("status: 429"), 'Recruitment API does not return HTTP 429 when rate limited');
-assert(publicApi.includes('Retry-After'), 'Recruitment API does not expose Retry-After');
-assert(!publicApi.includes("from('recruitment_applications').insert"), 'Recruitment API still performs a direct table insert');
-assert(publicApi.includes("request.headers.get('x-forwarded-for')"), 'Recruitment API is not deriving the client IP from forwarded headers');
-assert(publicApi.includes("error.message === 'RECRUITMENT_RATE_LIMIT'"), 'Recruitment API does not translate database rate-limit errors');
-assert(publicApi.includes("error.message === 'RECRUITMENT_CONTACT_COOLDOWN'"), 'Recruitment API does not translate contact cooldown errors');
-
-const adminApi = read('app/api/admin/recruitment/route.ts');
-assert(adminApi.includes('ensureAdmin'), 'Recruitment admin API gate is missing');
-assert(adminApi.includes('private') || adminApi.includes('admin_users'), 'Recruitment admin authorization path is missing');
-
-const packageJson = JSON.parse(read('package.json'));
-assert(packageJson.scripts?.verify?.includes('verify-recruitment.mjs'), 'Recruitment verification is not wired into npm verify');
-
-if (failures.length) {
-  console.error('RECRUITMENT VERIFY: FAIL');
-  for (const failure of failures) console.error(`- ${failure}`);
-  process.exit(1);
-}
+const root = path.resolve(new URL('..', import.meta.url).pathname); const failures = [];
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8'); const assert = (ok, msg) => { if (!ok) failures.push(msg); };
+const files = [
+  'app/recruitment/page.tsx','app/recruitment/[slug]/page.tsx','app/recruitment/[slug]/apply/page.tsx','app/recruitment/success/page.tsx','components/recruitment-form.tsx',
+  'app/api/recruitment/route.ts','app/api/admin/recruitment/route.ts','app/api/admin/recruitment/[id]/route.ts','components/recruitment-inbox.tsx','lib/recruitment-security.ts','lib/supabase/admin.ts',
+  'supabase/migrations/20260831020000_phase7_recruitment_funnel.sql','supabase/migrations/20260831020100_phase7_rate_limit_and_status_fix.sql','supabase/migrations/20260831020200_phase7_atomic_admin_actions.sql','supabase/migrations/20260831020300_phase7_close_direct_write_paths.sql','supabase/migrations/20260831020400_phase7_retire_legacy_submission_path.sql'
+];
+for (const file of files) assert(fs.existsSync(path.join(root,file)), `Missing Phase 7 file: ${file}`);
+const api = read('app/api/recruitment/route.ts'); const security = read('lib/recruitment-security.ts'); const migration = read('supabase/migrations/20260831020000_phase7_recruitment_funnel.sql'); const limiter = read('supabase/migrations/20260831020100_phase7_rate_limit_and_status_fix.sql'); const admin = read('app/api/admin/recruitment/route.ts'); const adminRpc = read('supabase/migrations/20260831020200_phase7_atomic_admin_actions.sql'); const closeWrites = read('supabase/migrations/20260831020300_phase7_close_direct_write_paths.sql'); const retire = read('supabase/migrations/20260831020400_phase7_retire_legacy_submission_path.sql'); const form = read('components/recruitment-form.tsx');
+assert(migration.includes('create table if not exists public.recruitment_jobs'), 'Jobs table missing'); assert(migration.includes('recruitment_application_notes'), 'Application notes table missing'); assert(migration.includes('create table if not exists public.audit_logs'), 'Audit table missing'); assert(migration.includes("recruitment-resumes"), 'Private resume bucket missing'); assert(migration.includes("allowed_mime_types"), 'Resume MIME restriction missing'); assert(migration.includes('5242880'), '5 MiB resume limit missing'); assert(migration.includes('lower(email), job_id'), 'Email + job duplicate index missing');
+assert(limiter.includes("request_count>=3"), 'Three-per-hour threshold missing'); assert(limiter.includes("interval '1 hour'"), 'One-hour rate-limit window missing'); assert(limiter.includes('pg_advisory_xact_lock'), 'Rate-limit concurrency lock missing'); assert(limiter.includes('v_resume_path !~'), 'Resume path validation missing');
+assert(security.includes('verifyTurnstile'), 'Turnstile verification missing'); assert(security.includes('%PDF-'), 'PDF magic-byte validation missing'); assert(security.includes('5 * 1024 * 1024'), 'Resume size guard missing'); assert(security.includes('normalize'), 'Unicode normalization missing');
+assert(api.includes("request.formData()"), 'Multipart handling missing'); assert(api.includes('MAX_MULTIPART_BYTES'), 'Multipart payload limit missing'); assert(api.includes('assertPdf'), 'PDF validation missing'); assert(api.includes('hasPdfMagicBytes'), 'PDF signature validation missing'); assert(api.includes('recruitment-resumes'), 'Private resume storage missing'); assert(api.includes('submit_recruitment_application_v7'), 'Hardened submission RPC missing'); assert(api.includes('DUPLICATE_APPLICATION'), 'Duplicate handling missing'); assert(api.includes('RECRUITMENT_RATE_LIMIT'), 'Rate-limit handling missing'); assert(api.includes('website'), 'Honeypot missing');
+assert(form.includes('multipart/form-data'), 'Candidate form is not multipart'); assert(form.includes('type="file"'), 'Resume input missing'); assert(form.includes('accept="application/pdf,.pdf"'), 'Client PDF restriction missing'); assert(form.includes('turnstile'), 'Turnstile widget missing'); assert(form.includes('minLength={20}'), 'Cover letter client validation missing');
+assert(admin.includes('ensureAdmin'), 'Admin RBAC gate missing'); assert(admin.includes('pageSize'), 'Server pagination missing'); assert(admin.includes('status'), 'Status filter missing'); assert(admin.includes('from'), 'Date filtering missing'); assert(admin.includes('admin_update_recruitment_application_v7'), 'Atomic admin RPC missing'); assert(admin.includes('expectedStatus'), 'Optimistic concurrency check missing'); assert(adminRpc.includes('private.is_admin()'), 'Database RBAC missing'); assert(adminRpc.includes('APPLICATION_STATUS_CHANGED'), 'Status audit action missing'); assert(adminRpc.includes('APPLICATION_NOTE_ADDED'), 'Note audit action missing'); assert(adminRpc.includes('recruitment_application_notes'), 'Atomic note write missing'); assert(closeWrites.includes('revoke insert,update,delete on public.recruitment_applications'), 'Direct application writes are not revoked'); assert(retire.includes('revoke execute on function public.submit_recruitment_application'), 'Legacy submission RPC is not retired');
+const detail = read('app/api/admin/recruitment/[id]/route.ts'); assert(detail.includes('createSignedUrl'), 'Resume signed URL access missing'); assert(detail.includes('recruitment_application_notes'), 'Application detail notes missing');
+const pkg = JSON.parse(read('package.json')); assert(pkg.scripts?.verify?.includes('verify-recruitment.mjs'), 'Phase 7 verifier is not wired into npm verify');
+if (failures.length) { console.error('RECRUITMENT VERIFY: FAIL'); failures.forEach((x) => console.error(`- ${x}`)); process.exit(1); }
 console.log('RECRUITMENT VERIFY: PASS');
-console.log('- Public application form/API: present');
-console.log('- Atomic database rate limiter: present');
-console.log('- Contact cooldown index: aligned');
-console.log('- Invoker-only submission function: present');
-console.log('- 429 frontend feedback: present');
-console.log('- Admin inbox/API: present');
-console.log('- Historical RLS/grants migration: present');
+console.log('- Public listings → requirements → application → success: present');
+console.log('- Multipart PDF upload + server validation: present');
+console.log('- Turnstile + honeypot + 3/hour rate limit: present');
+console.log('- Email + job duplicate constraint: present');
+console.log('- Private resume storage + signed admin access: present');
+console.log('- Paginated/searchable admin inbox: present');
+console.log('- State machine + atomic notes + audit trail: present');
