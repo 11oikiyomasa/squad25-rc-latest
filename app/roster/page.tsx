@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Full Roster | No Flaws',
     description: 'The complete No Flaws MLBB player roster, with roles, profiles, and public cuts.',
-    url: '/roster',
+    url: 'https://squad25-rc-latest.vercel.app/roster',
     type: 'website',
   },
 };
