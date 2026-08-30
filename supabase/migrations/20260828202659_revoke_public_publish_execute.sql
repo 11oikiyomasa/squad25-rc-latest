@@ -1,0 +1,2 @@
+-- Final publish function grants/revokes are consolidated into 20260828201517_atomic_admin_publish.sql.
+-- Kept as a migration marker so the repository matches production migration history.
