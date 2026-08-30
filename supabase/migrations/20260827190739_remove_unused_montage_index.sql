@@ -1,0 +1,2 @@
+-- Index cleanup is reconciled into the baseline + final index restore.
+-- Kept as a migration marker so the repository matches production migration history.
