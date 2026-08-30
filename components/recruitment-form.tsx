@@ -46,6 +46,11 @@ export default function RecruitmentForm() {
         body: JSON.stringify(form),
       });
       const payload = await response.json().catch(() => ({}));
+      if (response.status === 429) {
+        const retryAfter = Number(payload?.retryAfter) || Number(response.headers.get('Retry-After')) || 900;
+        const retryMinutes = Math.max(1, Math.ceil(retryAfter / 60));
+        throw new Error(`Terlalu banyak pengiriman. Coba lagi sekitar ${retryMinutes} menit.`);
+      }
       if (!response.ok) throw new Error(payload?.error ?? 'Application gagal dikirim.');
       setForm(initial);
       setDone(true);

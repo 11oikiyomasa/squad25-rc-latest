@@ -3,8 +3,20 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const roles = new Set(['EXP', 'JUNGLE', 'MID', 'GOLD', 'ROAM', 'FLEX']);
 
+type RateLimitResult = {
+  ok?: boolean;
+  retryAfter?: number;
+};
+
 function cleanText(value: unknown, max: number) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+function getClientIp(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown';
+
+  return request.headers.get('x-real-ip')?.trim() || 'unknown';
 }
 
 export async function POST(request: Request) {
@@ -51,26 +63,35 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from('recruitment_applications').insert({
-    full_name: fullName,
-    nickname,
-    role,
-    rank,
-    hero_pool: heroPool,
-    experience,
-    availability,
-    contact,
-    social_url: socialUrl,
-    message,
-    status: 'NEW',
-    admin_note: '',
-    reviewed_at: null,
-    source: 'website',
+  const { data, error } = await supabase.rpc('submit_recruitment_application', {
+    payload: {
+      fullName,
+      nickname,
+      role,
+      rank,
+      heroPool,
+      experience,
+      availability,
+      contact,
+      socialUrl,
+      message,
+      website: '',
+    },
+    client_ip: getClientIp(request),
   });
 
   if (error) {
     console.error('Recruitment submission failed:', error.message);
     return NextResponse.json({ error: 'Application gagal disimpan. Coba lagi.' }, { status: 500 });
+  }
+
+  const result = (data ?? null) as RateLimitResult | null;
+  if (!result?.ok) {
+    const retryAfter = Math.max(1, Math.min(86400, Number(result?.retryAfter) || 900));
+    return NextResponse.json(
+      { error: 'Terlalu banyak pengiriman. Coba lagi nanti.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter), 'Cache-Control': 'no-store' } },
+    );
   }
 
   return NextResponse.json({ ok: true });

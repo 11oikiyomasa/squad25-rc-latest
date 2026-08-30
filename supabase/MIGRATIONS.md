@@ -14,8 +14,10 @@ Recruitment and scrims use the migration versions recorded by the connected prod
 
 - `20260829122711_add_player_recruitment_applications.sql`
 - `20260829132004_add_scrims.sql`
+- `20260830084031_harden_recruitment_rate_limit.sql`
+- `20260830084158_align_recruitment_contact_rate_index.sql`
 
-The connected production project was re-checked during this reconciliation and currently reports these same 17 migration versions. Because the versions already exist remotely, merging this repository change does not require mutating production migration history. Do not run `migration repair` merely because a file was renamed or consolidated; first compare local and remote versions with `supabase migration list`. Supabase documents migration history comparison by migration timestamp/version, and `migration repair` changes the tracking table only.
+The connected production project was re-checked during this reconciliation and currently reports the same canonical migration sequence plus the recruitment hardening migrations above. Because each production migration version is represented explicitly in Git, deployment should use the normal `supabase db push` path rather than direct SQL or blind history repair.
 
 ## Fresh project
 
