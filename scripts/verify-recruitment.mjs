@@ -10,7 +10,7 @@ const has = (source, pattern) => new RegExp(pattern, 'm').test(source);
 const files = [
   'app/recruitment/page.tsx','app/recruitment/[slug]/page.tsx','app/recruitment/[slug]/apply/page.tsx','app/recruitment/success/page.tsx','components/recruitment-form.tsx',
   'app/api/recruitment/route.ts','app/api/admin/recruitment/route.ts','app/api/admin/recruitment/[id]/route.ts','components/recruitment-inbox.tsx','lib/recruitment-security.ts','lib/supabase/admin.ts',
-  'supabase/migrations/20260831020000_phase7_recruitment_funnel.sql','supabase/migrations/20260831020100_phase7_rate_limit_and_status_fix.sql','supabase/migrations/20260831020200_phase7_atomic_admin_actions.sql','supabase/migrations/20260831020300_phase7_close_direct_write_paths.sql','supabase/migrations/20260831020400_phase7_retire_legacy_submission_path.sql'
+  'supabase/migrations/20260831020000_phase7_recruitment_funnel.sql','supabase/migrations/20260831020100_phase7_rate_limit_and_status_fix.sql','supabase/migrations/20260831020200_phase7_atomic_admin_actions.sql','supabase/migrations/20260831020300_phase7_close_direct_write_paths.sql','supabase/migrations/20260831020400_phase7_retire_legacy_submission_path.sql','supabase/migrations/20260831020500_phase7_server_only_submission_rpc.sql'
 ];
 for (const file of files) assert(fs.existsSync(path.join(root, file)), `Missing Phase 7 file: ${file}`);
 
@@ -45,6 +45,14 @@ assert(api.includes('submit_recruitment_application_v7'), 'Hardened submission R
 assert(api.includes('DUPLICATE_APPLICATION'), 'Duplicate handling missing');
 assert(api.includes('RECRUITMENT_RATE_LIMIT'), 'Rate-limit handling missing');
 assert(api.includes('website'), 'Honeypot missing');
+assert(has(api, 'admin\\.rpc\\(\\s*[\'\"]submit_recruitment_application_v7'), 'Submission RPC is not called through the service-role admin client');
+
+const serverOnly = read('supabase/migrations/20260831020500_phase7_server_only_submission_rpc.sql');
+assert(serverOnly.includes("auth.role() <> 'service_role'"), 'Submission RPC is not server-only');
+assert(serverOnly.includes('revoke all on function public.submit_recruitment_application_v7(jsonb, text) from public, anon, authenticated'), 'Anonymous/authenticated submission RPC execution is not revoked');
+assert(serverOnly.includes('grant execute on function public.submit_recruitment_application_v7(jsonb, text) to service_role'), 'Service-role submission RPC grant is missing');
+assert(serverOnly.includes("storage.objects o"), 'Submission RPC does not verify the uploaded resume exists');
+assert(serverOnly.includes("bucket_id = 'recruitment-resumes'"), 'Submission RPC does not bind resume validation to the private resume bucket');
 
 const form = read('components/recruitment-form.tsx');
 assert(form.includes('multipart/form-data'), 'Candidate form is not multipart');
@@ -93,3 +101,4 @@ console.log('- Email + job duplicate constraint: present');
 console.log('- Private resume storage + signed admin access: present');
 console.log('- Paginated/searchable admin inbox: present');
 console.log('- State machine + atomic notes + audit trail: present');
+console.log('- Server-only submission RPC + uploaded-object binding: present');
