@@ -10,7 +10,7 @@ const requiredFiles = [
   'app/api/admin/scrims/route.ts',
   'app/admin/scrims/page.tsx',
   'components/scrim-control.tsx',
-  'supabase/migrations/20260829_add_scrims.sql',
+  'supabase/migrations/20260829132004_add_scrims.sql',
 ];
 
 for (const file of requiredFiles) {
@@ -31,7 +31,7 @@ for (const [label, source, needles] of [
   ['loading screen', loading, ['SQUAD.25', 'Public squad archive', 'loading-sweep']],
   ['public page', publicPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/scrims'", 'Match Center']],
   ['public content bridge', publicContent, ['MatchCenter']],
-  ['match center UI', matchCenter, ['timeZone: \'Asia/Jakarta\'', 'No next match', 'W / L']],
+  ['match center UI', matchCenter, ["timeZone: 'Asia/Jakarta'", 'No next match', 'W / L']],
   ['admin API', adminApi, ['ensureAdmin', 'POST', 'PATCH', 'DELETE']],
   ['admin page', adminPage, ['requireAdmin', 'ScrimControl']],
   ['admin control', control, ['/api/admin/scrims', 'PUBLIC', 'PRIVATE']],
@@ -42,7 +42,7 @@ for (const [label, source, needles] of [
   }
 }
 
-const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260829_add_scrims.sql'), 'utf8');
+const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260829132004_add_scrims.sql'), 'utf8');
 for (const needle of ['create table if not exists public.scrims', 'Public can read public scrims', 'Admins manage scrims']) {
   if (!migration.includes(needle)) throw new Error(`Scrim migration missing expected marker: ${needle}`);
 }
