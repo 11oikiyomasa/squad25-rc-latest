@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import RecruitmentForm from '@/components/recruitment-form';
 import PublicNav from '@/components/public-nav';
+import { AppShell, Button, Card, Section } from '@/components/ui';
 
 export const metadata: Metadata = {
   title: 'Player Recruitment',
@@ -18,36 +19,34 @@ export const metadata: Metadata = {
 
 export default function RecruitmentPage() {
   return (
-    <main className="min-h-screen bg-[#0c0d0f] text-[#f4f0e7]">
+    <AppShell>
       <PublicNav active="recruit" />
-
-      <section className="mx-auto max-w-5xl px-5 py-14 lg:px-8 lg:py-20">
+      <Section className="ui-container py-14 sm:py-16 lg:py-20">
         <div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:gap-16">
           <div>
-            <div className="text-[10px] uppercase tracking-[.25em] text-[#d7ff43]">05 — Recruitment</div>
-            <h1 className="mt-4 font-display text-7xl uppercase leading-[.78] sm:text-9xl">JOIN<br/><span className="text-[#d7ff43]">THE<br/>SQUAD.</span></h1>
+            <div className="ui-eyebrow text-[var(--acid)]">05 — Recruitment</div>
+            <h1 className="mt-4 font-display text-7xl uppercase leading-[.78] sm:text-9xl">JOIN<br/><span className="text-[var(--acid)]">THE<br/>SQUAD.</span></h1>
             <p className="mt-7 max-w-md text-sm leading-7 text-white/45">Roster penuh bukan berarti kursi tertutup. Kami cari pemain yang bisa main, belajar, communicate, dan survive scrim—bukan sekadar punya rank tinggi.</p>
-            <div className="mt-8 space-y-3 border-t border-white/8 pt-5 text-[10px] uppercase tracking-[.16em] text-white/30">
+            <div className="mt-8 space-y-3 border-t border-white/8 pt-5 font-mono text-[10px] uppercase tracking-[.16em] text-white/30">
               <div className="flex justify-between gap-4"><span>Roles</span><span className="text-white/50">EXP / JUNGLE / MID / GOLD / ROAM / FLEX</span></div>
               <div className="flex justify-between gap-4"><span>Process</span><span className="text-white/50">Review → Contact → Trial</span></div>
               <div className="flex justify-between gap-4"><span>Contact</span><span className="text-white/50">We use the contact you submit</span></div>
             </div>
             <div className="mt-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <Link href="/roster" className="border border-white/10 px-4 py-3 text-[10px] font-semibold uppercase tracking-[.17em] text-white/55 hover:border-white/25 hover:text-white">Review the roster ↗</Link>
-              <Link href="/scrims" className="border border-white/10 px-4 py-3 text-[10px] font-semibold uppercase tracking-[.17em] text-white/55 hover:border-white/25 hover:text-white">See match activity ↗</Link>
+              <Button href="/roster" variant="secondary">Review the roster ↗</Button>
+              <Button href="/matches" variant="ghost">See match activity ↗</Button>
             </div>
           </div>
-
-          <div className="border border-white/10 bg-[#101216] p-5 sm:p-8">
+          <Card className="p-5 sm:p-8">
             <div className="mb-7 border-b border-white/8 pb-5">
-              <div className="text-[10px] uppercase tracking-[.22em] text-[#ff6b38]">Trial application</div>
+              <div className="ui-eyebrow">Trial application</div>
               <h2 className="mt-2 text-2xl font-semibold">Show us your player file.</h2>
               <p className="mt-2 text-sm leading-6 text-white/35">Isi yang benar-benar relevan. Kami lebih peduli detail daripada paragraf kosong.</p>
             </div>
             <RecruitmentForm />
-          </div>
+          </Card>
         </div>
-      </section>
-    </main>
+      </Section>
+    </AppShell>
   );
 }
