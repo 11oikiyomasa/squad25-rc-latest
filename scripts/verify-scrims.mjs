@@ -4,10 +4,12 @@ import path from 'node:path';
 const root = process.cwd();
 const requiredFiles = [
   'app/loading.tsx',
+  'app/matches/page.tsx',
   'app/scrims/page.tsx',
   'components/scrims-content.tsx',
   'lib/scrims.ts',
   'app/api/admin/scrims/route.ts',
+  'app/admin/matches/page.tsx',
   'app/admin/scrims/page.tsx',
   'components/scrim-control.tsx',
   'supabase/migrations/20260829132004_add_scrims.sql',
@@ -19,23 +21,27 @@ for (const file of requiredFiles) {
 }
 
 const loading = fs.readFileSync(path.join(root, 'app/loading.tsx'), 'utf8');
-const publicPage = fs.readFileSync(path.join(root, 'app/scrims/page.tsx'), 'utf8');
+const publicMatchesPage = fs.readFileSync(path.join(root, 'app/matches/page.tsx'), 'utf8');
+const legacyPublicPage = fs.readFileSync(path.join(root, 'app/scrims/page.tsx'), 'utf8');
 const publicContent = fs.readFileSync(path.join(root, 'components/scrims-content.tsx'), 'utf8');
 const matchCenter = fs.existsSync(path.join(root, 'components/match-center.tsx')) ? fs.readFileSync(path.join(root, 'components/match-center.tsx'), 'utf8') : '';
 const adminApi = fs.readFileSync(path.join(root, 'app/api/admin/scrims/route.ts'), 'utf8');
-const adminPage = fs.readFileSync(path.join(root, 'app/admin/scrims/page.tsx'), 'utf8');
+const adminMatchesPage = fs.readFileSync(path.join(root, 'app/admin/matches/page.tsx'), 'utf8');
+const legacyAdminPage = fs.readFileSync(path.join(root, 'app/admin/scrims/page.tsx'), 'utf8');
 const control = fs.readFileSync(path.join(root, 'components/scrim-control.tsx'), 'utf8');
 const sitemap = fs.readFileSync(path.join(root, 'app/sitemap.ts'), 'utf8');
 
 for (const [label, source, needles] of [
   ['loading screen', loading, ['SQUAD.25', 'Public squad archive', 'loading-sweep']],
-  ['public page', publicPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/scrims'", 'Match Center']],
+  ['canonical public matches page', publicMatchesPage, ['getPublicScrims', 'ScrimsContent', "canonical: '/matches'", 'Match Center']],
+  ['legacy public scrims route', legacyPublicPage, ["redirect('/matches')"]],
   ['public content bridge', publicContent, ['MatchCenter']],
   ['match center UI', matchCenter, ["timeZone: 'Asia/Jakarta'", 'No next match', 'W / L']],
   ['admin API', adminApi, ['ensureAdmin', 'POST', 'PATCH', 'DELETE']],
-  ['admin page', adminPage, ['requireAdmin', 'ScrimControl']],
+  ['canonical admin matches page', adminMatchesPage, ['requireAdmin', 'ScrimControl']],
+  ['legacy admin scrims route', legacyAdminPage, ["redirect('/admin/matches')"]],
   ['admin control', control, ['/api/admin/scrims', 'PUBLIC', 'PRIVATE']],
-  ['sitemap', sitemap, ['/scrims']],
+  ['sitemap', sitemap, ['/matches']],
 ]) {
   for (const needle of needles) {
     if (!source.includes(needle)) throw new Error(`${label} is missing expected marker: ${needle}`);
