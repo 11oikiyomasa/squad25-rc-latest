@@ -4,13 +4,32 @@ import PublicNav from '@/components/public-nav';
 import { AppShell, Button, Card, Section } from '@/components/ui';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
+type RecruitmentJob = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  requirements: string[];
+  closes_at: string | null;
+};
+
 export const metadata: Metadata = {
   title: 'Player Recruitment', description: 'Open positions and trial applications for the No Flaws MLBB squad.',
   alternates: { canonical: '/recruitment' }, robots: { index: true, follow: true },
 };
 
 export default async function RecruitmentPage() {
-  const jobs = isSupabaseConfigured() ? (await createClient()).from('recruitment_jobs').select('id,title,slug,description,requirements,closes_at').eq('is_active', true).order('created_at', { ascending: false }).then(({ data }) => data ?? []) : [];
+  let jobs: RecruitmentJob[] = [];
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('recruitment_jobs')
+      .select('id,title,slug,description,requirements,closes_at')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    jobs = ((data ?? []) as RecruitmentJob[]).filter((job) => !job.closes_at || new Date(job.closes_at).getTime() > Date.now());
+  }
+
   return <AppShell><PublicNav active="recruit" /><Section className="ui-container py-14 sm:py-16 lg:py-20">
     <div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:gap-16">
       <div><div className="ui-eyebrow text-[var(--acid)]">05 — Recruitment</div><h1 className="mt-4 font-display text-7xl uppercase leading-[.78] sm:text-9xl">JOIN<br/><span className="text-[var(--acid)]">THE<br/>SQUAD.</span></h1><p className="mt-7 max-w-md text-sm leading-7 text-white/45">Pilih posisi yang aktif, baca kriterianya, lalu kirim player file lengkap. Tidak ada posisi aktif berarti tidak ada form palsu.</p><div className="mt-8 grid gap-2"><Button href="/roster" variant="secondary">Review the roster ↗</Button><Button href="/matches" variant="ghost">See match activity ↗</Button></div></div>
