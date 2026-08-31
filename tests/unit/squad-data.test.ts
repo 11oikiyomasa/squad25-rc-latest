@@ -13,8 +13,8 @@ test('content normalization accepts common YouTube URL forms', () => {
   assert.equal(normalizeYoutubeId('https://www.youtube.com/embed/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
 });
 
-test('content normalization rejects malformed or unsupported values', () => {
-  assert.equal(normalizeYoutubeId('not-a-video'), '');
+test('content normalization rejects malformed or unsupported URLs and empty values', () => {
+  assert.equal(normalizeYoutubeId('not-video'), '');
   assert.equal(normalizeYoutubeId('https://example.com/watch?v=dQw4w9WgXcQ'), '');
   assert.equal(normalizeYoutubeId('https://youtube.com/watch?v=short'), '');
   assert.equal(normalizeYoutubeId(''), '');
