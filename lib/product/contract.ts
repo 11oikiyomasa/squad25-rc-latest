@@ -1,3 +1,5 @@
+import { FUNNEL_STATES, FUNNEL_TRANSITIONS, type FunnelState } from '@/lib/funnel/state';
+
 export const PRODUCT_ID = 'SQUAD.25' as const;
 
 export const PRODUCT_ONE_LINER =
@@ -20,38 +22,8 @@ export const PERSONAS = {
 
 export type PersonaId = (typeof PERSONAS)[keyof typeof PERSONAS];
 
-export const FUNNEL_STATES = {
-  VISITOR: 'FUNNEL_VISITOR',
-  DEEP_LINK_MEMBER_ENTRY: 'FUNNEL_DEEP_LINK_MEMBER_ENTRY',
-  MEMBER_PAGE: 'FUNNEL_MEMBER_PAGE',
-  JOIN_CTA: 'FUNNEL_JOIN_CTA',
-  DEEP_LINK_RECRUITMENT_ENTRY: 'FUNNEL_RECRUITMENT_DEEP_LINK_ENTRY',
-  RECRUITMENT_FORM: 'FUNNEL_RECRUITMENT_FORM',
-  RECRUITMENT_CLOSED: 'FUNNEL_RECRUITMENT_CLOSED',
-  SUBMISSION_ERROR: 'FUNNEL_SUBMISSION_ERROR',
-  SUBMISSION_SUCCESS: 'FUNNEL_SUBMISSION_SUCCESS',
-  ADMIN_INBOX: 'FUNNEL_ADMIN_INBOX',
-  MEMBER_NOT_FOUND: 'FUNNEL_MEMBER_NOT_FOUND',
-} as const;
-
-export type FunnelState = (typeof FUNNEL_STATES)[keyof typeof FUNNEL_STATES];
-
-export const FUNNEL_TRANSITIONS = [
-  ['FUNNEL_VISITOR', 'selects a public member', 'FUNNEL_MEMBER_PAGE'],
-  ['FUNNEL_VISITOR', 'opens /member/[id] directly', 'FUNNEL_DEEP_LINK_MEMBER_ENTRY'],
-  ['FUNNEL_DEEP_LINK_MEMBER_ENTRY', 'member exists and is public', 'FUNNEL_MEMBER_PAGE'],
-  ['FUNNEL_DEEP_LINK_MEMBER_ENTRY', 'member does not exist or is unavailable', 'FUNNEL_MEMBER_NOT_FOUND'],
-  ['FUNNEL_MEMBER_PAGE', 'Join CTA selected while recruitment is OPEN', 'FUNNEL_JOIN_CTA'],
-  ['FUNNEL_JOIN_CTA', 'recruitment route opened', 'FUNNEL_RECRUITMENT_FORM'],
-  ['FUNNEL_VISITOR', 'opens recruitment route directly', 'FUNNEL_DEEP_LINK_RECRUITMENT_ENTRY'],
-  ['FUNNEL_DEEP_LINK_RECRUITMENT_ENTRY', 'recruitment cycle is OPEN', 'FUNNEL_RECRUITMENT_FORM'],
-  ['FUNNEL_DEEP_LINK_RECRUITMENT_ENTRY', 'recruitment cycle is CLOSED', 'FUNNEL_RECRUITMENT_CLOSED'],
-  ['FUNNEL_RECRUITMENT_FORM', 'authoritative submission succeeds', 'FUNNEL_SUBMISSION_SUCCESS'],
-  ['FUNNEL_RECRUITMENT_FORM', 'authoritative submission fails', 'FUNNEL_SUBMISSION_ERROR'],
-  ['FUNNEL_SUBMISSION_ERROR', 'applicant retries with accepted input', 'FUNNEL_RECRUITMENT_FORM'],
-  ['FUNNEL_SUBMISSION_SUCCESS', 'persisted Application becomes available to authorized administration', 'FUNNEL_ADMIN_INBOX'],
-  ['FUNNEL_RECRUITMENT_CLOSED', 'a new/open recruitment cycle becomes available', 'FUNNEL_RECRUITMENT_FORM'],
-] as const satisfies ReadonlyArray<readonly [FunnelState, string, FunnelState]>;
+export { FUNNEL_STATES, FUNNEL_TRANSITIONS };
+export type { FunnelState };
 
 export const DOMAIN_GLOSSARY = {
   DOMAIN_MEMBER: 'A publicly visible squad player identity represented by a Member Page.',
@@ -77,8 +49,8 @@ export const V1_SUCCESS_METRICS = {
 
 export const PHASE1_RULES = {
   MEMBER_IS_PUBLIC: true,
-  MEMBER_DEEP_LINK_WHEN_RECRUITMENT_CLOSED: 'FUNNEL_MEMBER_PAGE' as const,
-  RECRUITMENT_CLOSED_STATE: 'FUNNEL_RECRUITMENT_CLOSED' as const,
+  MEMBER_DEEP_LINK_WHEN_RECRUITMENT_CLOSED: FUNNEL_STATES.MEMBER_PAGE,
+  RECRUITMENT_CLOSED_STATE: FUNNEL_STATES.RECRUITMENT_CLOSED,
   ADMIN_INBOX_PERSONA: PERSONAS.ADMIN,
   APPLICANT_REQUIRES_PERSISTENT_ACCOUNT: false,
 } as const;
