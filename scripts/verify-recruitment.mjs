@@ -82,11 +82,16 @@ assert(route.includes('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse'), 'Canonical 
 assert(route.includes('probeRecruitmentResume'), 'Canonical route does not execute file probe');
 assert(route.includes('verifyTurnstile'), 'Canonical route does not execute anti-abuse verification');
 assert(route.includes('persistApplicationSubmission'), 'Canonical route does not reach the server write boundary');
-const zodPos = route.indexOf('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse');
-const probePos = route.indexOf('probeRecruitmentResume', zodPos + 1);
-const turnstilePos = route.indexOf('verifyTurnstile', probePos + 1);
-const writePos = route.indexOf('persistApplicationSubmission', turnstilePos + 1);
-assert(zodPos >= 0 && probePos > zodPos && turnstilePos > probePos && writePos > turnstilePos, 'Submission pipeline order changed');
+const postStart = route.indexOf('export async function POST');
+assert(postStart >= 0, 'Canonical POST handler missing');
+if (postStart >= 0) {
+  const postBody = route.slice(postStart);
+  const zodPos = postBody.indexOf('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse');
+  const probePos = postBody.indexOf('probeRecruitmentResume', zodPos + 1);
+  const turnstilePos = postBody.indexOf('verifyTurnstile', probePos + 1);
+  const writePos = postBody.indexOf('persistApplicationSubmission', turnstilePos + 1);
+  assert(zodPos >= 0 && probePos > zodPos && turnstilePos > probePos && writePos > turnstilePos, 'Submission pipeline order changed inside POST handler');
+}
 assert(!route.includes("from('recruitment_applications').insert"), 'Direct Application INSERT write path detected');
 
 const writer = read('lib/recruitment/server-write.ts');
@@ -117,15 +122,15 @@ assert(migrations.includes('recruitment_applications_email_job_uidx'), 'Normaliz
 assert(migrations.includes('lower(email), job_id'), 'Normalized email + opening unique definition missing');
 assert(migrations.includes("'recruitment-resumes'"), 'Private resume bucket contract missing');
 assert(migrations.includes("'squad-media'"), 'Squad media bucket contract missing');
-assert(migrations.includes('5242880'), '5 MiB storage limit contract missing');
-assert(migrations.includes('8388608'), '8 MiB media storage limit contract missing');
-assert(migrations.includes('recruitment_applications for select to authenticated'), 'Admin Application SELECT policy missing');
+assert(migrations.includes('5242880'), '5 MiB storage limit missing');
+assert(migrations.includes('8388608'), '8 MiB media storage limit missing');
+assert(migrations.includes('on public.recruitment_applications for select to authenticated'), 'Admin Application SELECT policy missing');
 assert(migrations.includes('revoke select, insert, update, delete on public.recruitment_applications from anon'), 'Anon Application direct privileges not revoked');
 assert(migrations.includes('revoke insert, update, delete on public.recruitment_applications from authenticated'), 'Authenticated Application direct write privileges not revoked');
 
 const privileges = read('supabase/migrations/20260831100100_phase9_privileges.sql');
 assert(/revoke/i.test(privileges), 'Privilege revocation contract missing');
-assert(/grant/i.test(privileges), 'Privilege grant contract missing');
+assert(/grant/i.test(privileges), 'Required role grant contract missing');
 
 const rateLimit = read('lib/security/rate-limit.ts');
 assert(rateLimit.includes('RATE_APPLICATION_BURST = 3'), '3/30s burst rate limit missing');
