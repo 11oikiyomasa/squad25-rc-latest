@@ -1,27 +1,121 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Status = 'NEW' | 'REVIEWING' | 'SHORTLISTED' | 'ACCEPTED' | 'REJECTED';
 type Application = { id: string; created_at: string; full_name: string; nickname: string; email: string; phone: string; role: string; portfolio_link: string; status: Status; resume_original_name: string | null; resume_size: number | null; job_id: string | null; };
 type Detail = { application: Application & { cover_letter: string; resume_path: string | null; recruitment_jobs?: { title?: string } | null }; notes: { id: string; admin_name: string; note: string; created_at: string }[]; resumeUrl: string | null };
 const statuses: Status[] = ['NEW', 'REVIEWING', 'SHORTLISTED', 'ACCEPTED', 'REJECTED'];
-const formatDate = (v: string) => new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v));
+const formatDate = (value: string) => new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
 export default function RecruitmentInbox() {
-  const [applications, setApplications] = useState<Application[]>([]); const [selected, setSelected] = useState<Detail | null>(null);
-  const [filter, setFilter] = useState<Status | 'ALL'>('ALL'); const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const [total, setTotal] = useState(0); const [note, setNote] = useState(''); const [status, setStatus] = useState<Status>('NEW'); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [selected, setSelected] = useState<Detail | null>(null);
+  const [filter, setFilter] = useState<Status | 'ALL'>('ALL');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [note, setNote] = useState('');
+  const [status, setStatus] = useState<Status>('NEW');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const requestVersion = useRef(0);
+  const detailVersion = useRef(0);
 
-  async function load() { setLoading(true); setError(''); try { const qs = new URLSearchParams({ page: String(page), pageSize: '20' }); if (filter !== 'ALL') qs.set('status', filter); if (search.trim()) qs.set('q', search.trim()); const r = await fetch(`/api/admin/recruitment?${qs}`, { cache: 'no-store' }); const p = await r.json(); if (!r.ok) throw new Error(p?.error ?? 'Failed to load applications.'); setApplications(p.applications ?? []); setTotal(p.total ?? 0); if (p.applications?.length) await open(p.applications[0].id); else setSelected(null); } catch (e) { setError(e instanceof Error ? e.message : 'Failed to load applications.'); } finally { setLoading(false); } }
-  async function open(id: string) { const r = await fetch(`/api/admin/recruitment/${id}`, { cache: 'no-store' }); const p = await r.json(); if (!r.ok) throw new Error(p?.error ?? 'Failed to load application.'); setSelected(p); setStatus(p.application.status); setNote(''); }
-  useEffect(() => { const timer = window.setTimeout(() => void load(), 180); return () => window.clearTimeout(timer); }, [page, filter, search]);
+  async function open(id: string, version = requestVersion.current) {
+    const currentDetail = ++detailVersion.current;
+    try {
+      const response = await fetch(`/api/admin/recruitment/${encodeURIComponent(id)}`, { cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error ?? 'Failed to load application.');
+      if (version !== requestVersion.current || currentDetail !== detailVersion.current) return;
+      setSelected(payload);
+      setStatus(payload.application.status);
+      setNote('');
+    } catch (caught) {
+      if (version !== requestVersion.current || currentDetail !== detailVersion.current) return;
+      setError(caught instanceof Error ? caught.message : 'Failed to load application.');
+    }
+  }
 
-  async function save() { if (!selected || busy) return; setBusy(true); setError(''); try { const r = await fetch('/api/admin/recruitment', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: selected.application.id, status, expectedStatus: selected.application.status, note }) }); const p = await r.json(); if (!r.ok) throw new Error(p?.error ?? 'Update failed.'); await open(selected.application.id); setApplications((xs) => xs.map((x) => x.id === p.id ? { ...x, status: p.status } : x)); } catch (e) { setError(e instanceof Error ? e.message : 'Update failed.'); } finally { setBusy(false); } }
+  async function load() {
+    const version = ++requestVersion.current;
+    setLoading(true);
+    setError('');
+    try {
+      const qs = new URLSearchParams({ page: String(page), pageSize: '20' });
+      if (filter !== 'ALL') qs.set('status', filter);
+      if (search.trim()) qs.set('q', search.trim());
+      const response = await fetch(`/api/admin/recruitment?${qs}`, { cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error ?? 'Failed to load applications.');
+      if (version !== requestVersion.current) return;
+
+      const nextApplications = payload.applications ?? [];
+      setApplications(nextApplications);
+      setTotal(payload.total ?? 0);
+      if (nextApplications.length) {
+        await open(nextApplications[0].id, version);
+      } else {
+        ++detailVersion.current;
+        setSelected(null);
+        setNote('');
+      }
+    } catch (caught) {
+      if (version !== requestVersion.current) return;
+      setError(caught instanceof Error ? caught.message : 'Failed to load applications.');
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 180);
+    return () => window.clearTimeout(timer);
+  }, [page, filter, search]);
+
+  async function save() {
+    if (!selected || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/recruitment', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selected.application.id, status, expectedStatus: selected.application.status, note }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error ?? 'Update failed.');
+      await open(selected.application.id);
+      setApplications((items) => items.map((item) => item.id === payload.id ? { ...item, status: payload.status } : item));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Update failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-    <aside className="border border-white/8 bg-[#101216] p-4"><div className="flex items-center justify-between border-b border-white/8 pb-4"><div><div className="text-[9px] uppercase tracking-[.2em] text-[#ff6b38]">Recruitment</div><h1 className="mt-1 text-xl font-semibold">Applications</h1></div><button onClick={() => void load()} className="border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.16em] text-white/50">Refresh</button></div><div className="mt-4 flex flex-wrap gap-1.5">{(['ALL', ...statuses] as const).map((v) => <button key={v} onClick={() => { setFilter(v); setPage(1); }} className={`border px-2.5 py-1.5 text-[8px] font-semibold uppercase ${filter === v ? 'border-[#d7ff43] bg-[#d7ff43] text-black' : 'border-white/8 text-white/35'}`}>{v}</button>)}</div><input value={search} onChange={(e) => { setSearch(e.target.value.slice(0, 100)); setPage(1); }} placeholder="Search name, email, nickname" className="mt-3 w-full border border-white/10 bg-[#0c0d0f] px-3 py-2.5 text-xs text-white outline-none"/><div className="mt-4 space-y-2">{loading && <div className="px-3 py-8 text-center text-xs text-white/30">Loading queue…</div>}{!loading && !applications.length && <div className="border border-white/8 px-3 py-8 text-center text-xs text-white/30">No applications match.</div>}{applications.map((a) => <button key={a.id} onClick={() => void open(a.id)} className={`w-full border p-3 text-left ${selected?.application.id === a.id ? 'border-[#d7ff43]/30 bg-[#d7ff43]/[.04]' : 'border-white/8'}`}><div className="flex justify-between gap-3"><span className="truncate text-sm font-semibold">{a.nickname} <span className="font-normal text-white/35">/ {a.full_name}</span></span><span className="text-[8px] text-white/35">{a.status}</span></div><div className="mt-2 text-[9px] text-white/20">{a.email} · {formatDate(a.created_at)}</div></button>)}</div><div className="mt-4 flex justify-between text-[9px] text-white/25"><button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Prev</button><span>{page} / {Math.max(1, Math.ceil(total / 20))}</span><button disabled={page * 20 >= total} onClick={() => setPage((p) => p + 1)}>Next →</button></div></aside>
-    <section className="border border-white/8 bg-[#101216] p-5 sm:p-7">{error && <div role="alert" className="mb-5 border border-[#ff6b38]/25 bg-[#ff6b38]/[.04] px-4 py-3 text-xs text-[#ffb197]">{error}</div>}{!selected ? <div className="grid min-h-[420px] place-items-center text-center"><div className="font-display text-5xl uppercase">Select an applicant.</div></div> : <><div className="border-b border-white/8 pb-5"><div className="flex flex-wrap items-end justify-between gap-4"><div><div className="text-[9px] uppercase tracking-[.2em] text-[#d7ff43]">{selected.application.recruitment_jobs?.title ?? 'Application'}</div><h2 className="mt-2 font-display text-5xl uppercase">{selected.application.nickname}</h2><div className="mt-2 text-sm text-white/40">{selected.application.full_name} · {selected.application.email} · {selected.application.phone}</div></div><Link href={`/admin/recruitment/${selected.application.id}`} className="border border-white/10 px-3 py-2 text-[9px] font-bold uppercase tracking-[.16em] text-white/45 hover:border-white/25 hover:text-white">Open full detail ↗</Link></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><Info label="Role" value={selected.application.role}/><Info label="Submitted" value={formatDate(selected.application.created_at)}/><Info label="Portfolio" value={selected.application.portfolio_link || '—'}/><Info label="Resume" value={selected.application.resume_original_name || '—'}/></div><div className="mt-6 border border-white/8 bg-[#0c0d0f] p-4"><div className="text-[8px] uppercase tracking-[.18em] text-white/25">Cover letter</div><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-white/60">{selected.application.cover_letter || '—'}</p></div>{selected.resumeUrl && <a href={selected.resumeUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex border border-white/10 px-4 py-3 text-[9px] font-bold uppercase tracking-[.16em]">Open private resume ↗</a>}<div className="mt-6 border-t border-white/8 pt-5"><div className="grid gap-4 sm:grid-cols-[1fr_220px_auto]"><textarea value={note} onChange={(e) => setNote(e.target.value.slice(0, 2000))} className="min-h-24 border border-white/10 bg-[#0c0d0f] p-3 text-sm text-white outline-none" placeholder="Append internal note…"/><select value={status} onChange={(e) => setStatus(e.target.value as Status)} className="border border-white/10 bg-[#0c0d0f] px-3 py-3 text-sm text-white">{statuses.map((s) => <option key={s}>{s}</option>)}</select><button onClick={() => void save()} disabled={busy} className="bg-[#d7ff43] px-5 py-3 text-xs font-black uppercase text-black disabled:opacity-50">{busy ? 'Saving…' : 'Save review'}</button></div></div><div className="mt-6 border-t border-white/8 pt-5"><div className="ui-eyebrow">Internal notes</div><div className="mt-3 space-y-2">{selected.notes.map((n) => <div key={n.id} className="border border-white/8 bg-[#0c0d0f] p-3"><div className="text-[9px] text-white/30">{n.admin_name} · {formatDate(n.created_at)}</div><p className="mt-2 whitespace-pre-wrap text-sm text-white/55">{n.note}</p></div>)}</div></div></>}</section>
+    <aside className="border border-white/8 bg-[#101216] p-4">
+      <div className="flex items-center justify-between border-b border-white/8 pb-4"><div><div className="text-[9px] uppercase tracking-[.2em] text-[#ff6b38]">Recruitment</div><h1 className="mt-1 text-xl font-semibold">Applications</h1></div><button type="button" onClick={() => void load()} className="border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.16em] text-white/50">Refresh</button></div>
+      <div className="mt-4 flex flex-wrap gap-1.5">{(['ALL', ...statuses] as const).map((value) => <button type="button" key={value} onClick={() => { setFilter(value); setPage(1); }} className={`border px-2.5 py-1.5 text-[8px] font-semibold uppercase ${filter === value ? 'border-[#d7ff43] bg-[#d7ff43] text-black' : 'border-white/8 text-white/35'}`}>{value}</button>)}</div>
+      <input value={search} onChange={(event) => { setSearch(event.target.value.slice(0, 100)); setPage(1); }} placeholder="Search name, email, nickname" className="mt-3 w-full border border-white/10 bg-[#0c0d0f] px-3 py-2.5 text-xs text-white outline-none" />
+      <div className="mt-4 space-y-2">{loading && <div className="px-3 py-8 text-center text-xs text-white/30">Loading queue…</div>}{!loading && !applications.length && <div className="border border-white/8 px-3 py-8 text-center text-xs text-white/30">No applications match.</div>}{applications.map((application) => <button key={application.id} type="button" onClick={() => void open(application.id)} className={`w-full border p-3 text-left ${selected?.application.id === application.id ? 'border-[#d7ff43]/30 bg-[#d7ff43]/[.04]' : 'border-white/8'}`}><div className="flex justify-between gap-3"><span className="truncate text-sm font-semibold">{application.nickname} <span className="font-normal text-white/35">/ {application.full_name}</span></span><span className="text-[8px] text-white/35">{application.status}</span></div><div className="mt-2 text-[9px] text-white/20">{application.email} · {formatDate(application.created_at)}</div></button>)}</div>
+      <div className="mt-4 flex justify-between text-[9px] text-white/25"><button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>← Prev</button><span>{page} / {Math.max(1, Math.ceil(total / 20))}</span><button type="button" disabled={page * 20 >= total} onClick={() => setPage((value) => value + 1)}>Next →</button></div>
+    </aside>
+    <section className="border border-white/8 bg-[#101216] p-5 sm:p-7">
+      {error && <div role="alert" className="mb-5 border border-[#ff6b38]/25 bg-[#ff6b38]/[.04] px-4 py-3 text-xs text-[#ffb197]">{error}</div>}
+      {!selected ? <div className="grid min-h-[420px] place-items-center text-center"><div className="font-display text-5xl uppercase">Select an applicant.</div></div> : <>
+        <div className="border-b border-white/8 pb-5"><div className="flex flex-wrap items-end justify-between gap-4"><div><div className="text-[9px] uppercase tracking-[.2em] text-[#d7ff43]">{selected.application.recruitment_jobs?.title ?? 'Application'}</div><h2 className="mt-2 font-display text-5xl uppercase">{selected.application.nickname}</h2><div className="mt-2 text-sm text-white/40">{selected.application.full_name} · {selected.application.email} · {selected.application.phone}</div></div><Link href={`/admin/recruitment/${selected.application.id}`} className="border border-white/10 px-3 py-2 text-[9px] font-bold uppercase tracking-[.16em] text-white/45 hover:border-white/25 hover:text-white">Open full detail ↗</Link></div></div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2"><Info label="Role" value={selected.application.role}/><Info label="Submitted" value={formatDate(selected.application.created_at)}/><Info label="Portfolio" value={selected.application.portfolio_link || '—'}/><Info label="Resume" value={selected.application.resume_original_name || '—'}/></div>
+        <div className="mt-6 border border-white/8 bg-[#0c0d0f] p-4"><div className="text-[8px] uppercase tracking-[.18em] text-white/25">Cover letter</div><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-white/60">{selected.application.cover_letter || '—'}</p></div>
+        {selected.resumeUrl && <a href={selected.resumeUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex border border-white/10 px-4 py-3 text-[9px] font-bold uppercase tracking-[.16em]">Open private resume ↗</a>}
+        <div className="mt-6 border-t border-white/8 pt-5"><div className="grid gap-4 sm:grid-cols-[1fr_220px_auto]"><textarea value={note} onChange={(event) => setNote(event.target.value.slice(0, 2000))} className="min-h-24 border border-white/10 bg-[#0c0d0f] p-3 text-sm text-white outline-none" placeholder="Append internal note…"/><select value={status} onChange={(event) => setStatus(event.target.value as Status)} className="border border-white/10 bg-[#0c0d0f] px-3 py-3 text-sm text-white">{statuses.map((value) => <option key={value}>{value}</option>)}</select><button type="button" onClick={() => void save()} disabled={busy} className="bg-[#d7ff43] px-5 py-3 text-xs font-black uppercase text-black disabled:opacity-50">{busy ? 'Saving…' : 'Save review'}</button></div></div>
+        <div className="mt-6 border-t border-white/8 pt-5"><div className="ui-eyebrow">Internal notes</div><div className="mt-3 space-y-2">{selected.notes.map((item) => <div key={item.id} className="border border-white/8 bg-[#0c0d0f] p-3"><div className="text-[9px] text-white/30">{item.admin_name} · {formatDate(item.created_at)}</div><p className="mt-2 whitespace-pre-wrap text-sm text-white/55">{item.note}</p></div>)}</div></div>
+      </>}
+    </section>
   </div>;
 }
 function Info({ label, value }: { label: string; value: string }) { return <div className="border border-white/8 bg-[#0c0d0f] p-4"><div className="text-[8px] uppercase tracking-[.18em] text-white/25">{label}</div><div className="mt-2 break-words text-sm text-white/75">{value}</div></div>; }
