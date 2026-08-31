@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "db:types": "node scripts/generate-database-types.mjs",
     "verify": "node scripts/verify.mjs && node scripts/verify-recruitment.mjs && node scripts/verify-scrims.mjs && node scripts/verify-media.mjs && node scripts/verify-agent-contract.mjs"
   },
   "dependencies": {
