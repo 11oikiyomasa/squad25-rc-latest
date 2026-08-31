@@ -23,6 +23,19 @@ function storagePathFromPublicUrl(value: string): string | null {
   }
 }
 
+function isAllowedImageSource(value: string) {
+  const source = value.trim();
+  if (source.startsWith('/images/')) return true;
+  try {
+    const url = new URL(source);
+    return url.protocol === 'https:'
+      && url.hostname === 'wyjsosamlkbwksrslona.supabase.co'
+      && url.pathname.startsWith(PUBLIC_OBJECT_MARKER);
+  } catch {
+    return false;
+  }
+}
+
 async function ensureAdmin() {
   if (!isSupabaseConfigured()) return { ok: false as const, status: 503, message: 'Supabase is not configured.' };
   const supabase = await createClient();
@@ -87,7 +100,7 @@ export async function PUT(request: Request) {
       status: String(m.status),
       bio: String(m.bio ?? '').slice(0, 600),
       accent: String(m.accent ?? '#d7ff43').slice(0, 20),
-      photo: String(m.photo ?? '').slice(0, 500),
+      photo: String(m.photo ?? '').trim().slice(0, 500),
       montages: list.slice(0, 30).map((rawMontage) => {
         const montage = rawMontage as Record<string, unknown>;
         return {
@@ -100,6 +113,11 @@ export async function PUT(request: Request) {
       }).filter((montage) => montage.title),
     };
   });
+
+  const invalidMemberImage = normalizedMembers.find((member) => !member.photo || !isAllowedImageSource(member.photo));
+  if (invalidMemberImage) {
+    return NextResponse.json({ error: `Invalid or unsupported photo source for member ${invalidMemberImage.id}. Use /images/* or the SQUAD.25 Supabase media bucket.` }, { status: 422 });
+  }
 
   if (normalizedMembers.some((m) => !m.nickname || !m.name || !['EXP','JUNGLE','MID','GOLD','ROAM'].includes(m.role) || !['ACTIVE','BENCH','CAPTAIN'].includes(m.status))) {
     return NextResponse.json({ error: 'One or more member fields are invalid.' }, { status: 422 });
@@ -125,7 +143,12 @@ export async function PUT(request: Request) {
       image_url: String(item.image ?? item.image_url ?? '').trim().slice(0, 800),
       sort_order: index,
     };
-  }).filter((item) => item.title && item.image_url);
+  }).filter((item) => item.title);
+
+  const invalidGalleryImage = normalizedGallery.find((item) => !item.image_url || !isAllowedImageSource(item.image_url));
+  if (invalidGalleryImage) {
+    return NextResponse.json({ error: `Invalid or unsupported gallery image for ${invalidGalleryImage.title}. Use /images/* or the SQUAD.25 Supabase media bucket.` }, { status: 422 });
+  }
 
   const previous = await getSquadContent();
   const previousPhotoPaths = new Set(
