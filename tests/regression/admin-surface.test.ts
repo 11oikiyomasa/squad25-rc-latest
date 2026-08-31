@@ -38,3 +38,10 @@ test('regression: admin navigation exposes all canonical control-room sections',
   for (const label of ['Overview', 'Roster', 'Matches', 'Media', 'Recruitment']) assert.match(layout, new RegExp(label));
   assert.match(layout, /href="\/"/);
 });
+
+test('regression: roster and overview use the hardened single content studio implementation', () => {
+  const overview = read('app/admin/overview/page.tsx');
+  const roster = read('app/admin/roster/page.tsx');
+  assert.match(overview, /AdminStudioV2/);
+  assert.match(roster, /AdminStudioV2/);
+});
