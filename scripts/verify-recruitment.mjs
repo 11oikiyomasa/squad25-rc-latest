@@ -81,7 +81,7 @@ assert(route.includes('7 * 1024 * 1024'), '7 MiB application multipart ceiling m
 assert(route.includes('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse'), 'Canonical route does not execute Zod schema');
 assert(route.includes('probeRecruitmentResume'), 'Canonical route does not execute file probe');
 assert(route.includes('verifyTurnstile'), 'Canonical route does not execute anti-abuse verification');
-assert(route.includes('persistApplicationSubmission'), 'Canonical route does not reach the server write boundary');
+assert(route.includes('const writeResult = await persist('), 'Canonical POST does not reach write wrapper');
 const postStart = route.indexOf('export async function POST');
 assert(postStart >= 0, 'Canonical POST handler missing');
 if (postStart >= 0) {
@@ -89,7 +89,7 @@ if (postStart >= 0) {
   const zodPos = postBody.indexOf('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse');
   const probePos = postBody.indexOf('probeRecruitmentResume', zodPos + 1);
   const turnstilePos = postBody.indexOf('verifyTurnstile', probePos + 1);
-  const writePos = postBody.indexOf('persistApplicationSubmission', turnstilePos + 1);
+  const writePos = postBody.indexOf('const writeResult = await persist(', turnstilePos + 1);
   assert(zodPos >= 0 && probePos > zodPos && turnstilePos > probePos && writePos > turnstilePos, 'Submission pipeline order changed inside POST handler');
 }
 assert(!route.includes("from('recruitment_applications').insert"), 'Direct Application INSERT write path detected');
