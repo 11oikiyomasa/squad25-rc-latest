@@ -1,36 +1,35 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const root = process.cwd();
+const root = path.resolve(new URL('..', import.meta.url).pathname);
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const requiredFiles = [
-  'app/loading.tsx',
+  'app/matches/loading.tsx',
   'app/matches/page.tsx',
+  'app/matches/[match_id]/page.tsx',
   'app/scrims/page.tsx',
-  'components/scrims-content.tsx',
-  'components/match-center.tsx',
-  'lib/scrims.ts',
-  'app/api/admin/scrims/route.ts',
   'app/admin/matches/page.tsx',
   'app/admin/scrims/page.tsx',
+  'components/match-center.tsx',
+  'components/scrims-content.tsx',
   'components/scrim-control.tsx',
+  'lib/scrims.ts',
+  'app/api/admin/scrims/route.ts',
+  'app/sitemap.ts',
   'supabase/migrations/20260829132004_add_scrims.sql',
   'supabase/migrations/20260831021900_harden_match_lifecycle.sql',
 ];
+for (const file of requiredFiles) if (!fs.existsSync(path.join(root, file))) throw new Error(`Missing required scrim artifact: ${file}`);
 
-for (const file of requiredFiles) {
-  const full = path.join(root, file);
-  if (!fs.existsSync(full)) throw new Error(`Missing scrim artifact: ${file}`);
-}
-
-const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
-const loading = read('app/loading.tsx');
+const loading = read('app/matches/loading.tsx');
 const publicMatchesPage = read('app/matches/page.tsx');
 const legacyPublicPage = read('app/scrims/page.tsx');
-const publicContent = read('components/scrims-content.tsx');
+const publicContent = read('components/match-center.tsx');
 const matchCenter = read('components/match-center.tsx');
 const scrims = read('lib/scrims.ts');
 const adminApi = read('app/api/admin/scrims/route.ts');
 const adminMatchesPage = read('app/admin/matches/page.tsx');
+const adminLayout = read('app/admin/layout.tsx');
 const legacyAdminPage = read('app/admin/scrims/page.tsx');
 const control = read('components/scrim-control.tsx');
 const sitemap = read('app/sitemap.ts');
@@ -44,7 +43,8 @@ for (const [label, source, needles] of [
   ['match lifecycle UI', matchCenter, ['01 — Live', '02 — Scheduled', '03 — Completed', '04 — Cancelled', 'SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED', 'Countdown', 'event_name', 'recap_url', 'media_url']],
   ['match data source', scrims, ['ScrimStatus', "'CANCELLED'", 'event_name', 'recap_url', 'media_url', "eq('visibility', 'PUBLIC')"]],
   ['admin API', adminApi, ['ensureAdmin', 'POST', 'PATCH', 'DELETE', 'Invalid lifecycle transition', 'New matches must start as SCHEDULED', 'eventName', 'recapUrl', 'mediaUrl']],
-  ['canonical admin matches page', adminMatchesPage, ['requireAdmin', 'ScrimControl']],
+  ['canonical admin matches page', adminMatchesPage, ['ScrimControl']],
+  ['shared admin RBAC layout', adminLayout, ['await requireAdmin()', 'Admin navigation', '/admin/matches']],
   ['legacy admin scrims route', legacyAdminPage, ["redirect('/admin/matches')"]],
   ['admin control', control, ['/api/admin/scrims', 'PUBLIC', 'PRIVATE', 'Lifecycle state', 'Recap URL', 'Media URL']],
   ['sitemap', sitemap, ['/matches']],
