@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test:unit": "npx --yes tsx@4.23.13 --test \"tests/unit/*.test.ts\"",
+    "test:integration": "npx --yes tsx@4.23.13 --test \"tests/integration/*.test.ts\"",
+    "test:e2e": "npm install --no-save --package-lock=false @playwright/test@1.62.1 && npx playwright test",
+    "test": "npm run test:unit",
     "verify": "node scripts/verify.mjs && node scripts/verify-recruitment.mjs && node scripts/verify-scrims.mjs && node scripts/verify-media.mjs && node scripts/verify-agent-contract.mjs"
   },
   "dependencies": {
