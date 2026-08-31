@@ -74,11 +74,70 @@ test.describe('admin flows', () => {
     await loginAsAdmin(page);
   });
 
-  test('Admin sees application inbox', async ({ page }) => {
+  test('Admin sees application', async ({ page }) => {
     test.skip(!hasAdminCredentials, 'Admin credentials are not configured for this environment.');
     await loginAsAdmin(page);
+
+    await page.route('**/api/admin/recruitment?*', async (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          applications: [{
+            id: 'e2e-application-1',
+            created_at: '2026-08-31T05:00:00.000Z',
+            full_name: 'Phase 12 Applicant',
+            nickname: 'PHASE12',
+            email: 'phase12@example.com',
+            phone: '+628123456789',
+            role: 'MID',
+            portfolio_link: 'https://example.com/phase12',
+            status: 'NEW',
+            resume_original_name: 'resume.pdf',
+            resume_size: 128,
+            job_id: 'e2e-job-1',
+          }],
+          page: 1,
+          pageSize: 20,
+          total: 1,
+        }),
+      });
+    });
+
+    await page.route('**/api/admin/recruitment/e2e-application-1', async (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          application: {
+            id: 'e2e-application-1',
+            created_at: '2026-08-31T05:00:00.000Z',
+            full_name: 'Phase 12 Applicant',
+            nickname: 'PHASE12',
+            email: 'phase12@example.com',
+            phone: '+628123456789',
+            role: 'MID',
+            portfolio_link: 'https://example.com/phase12',
+            status: 'NEW',
+            resume_original_name: 'resume.pdf',
+            resume_size: 128,
+            job_id: 'e2e-job-1',
+            cover_letter: 'Automated application fixture.',
+            resume_path: null,
+            recruitment_jobs: { title: 'Mid Laner Trial' },
+          },
+          notes: [],
+          resumeUrl: null,
+        }),
+      });
+    });
+
     await page.goto('/admin/recruitment');
-    await expect(page.getByText('RECRUITMENT INBOX', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /PHASE12/ })).toBeVisible();
+    await expect(page.getByText('Phase 12 Applicant', { exact: true })).toBeVisible();
+    await expect(page.getByText('Automated application fixture.', { exact: true })).toBeVisible();
   });
 
   test('Admin updates content', async ({ page }) => {
