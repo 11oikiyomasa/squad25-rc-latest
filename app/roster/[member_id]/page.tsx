@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { normalizeYoutubeId, squadProfile } from '@/data/squad';
 import { getSquadContent } from '@/lib/content';
+import { hasEligibleRecruitmentOpening } from '@/lib/recruitment/public-state';
 import { MemberTape } from '@/components/member-tape';
 import PublicNav from '@/components/public-nav';
 import ShareMember from '@/components/share-member';
@@ -27,14 +28,17 @@ export async function generateMetadata({ params }: { params: Promise<{ member_id
 
 export default async function MemberPage({ params }: { params: Promise<{ member_id: string }> }) {
   const { member_id } = await params;
-  const { members, profile, achievements } = await getSquadContent();
+  const [{ members, profile, achievements }, recruitmentAvailable] = await Promise.all([
+    getSquadContent(),
+    hasEligibleRecruitmentOpening(),
+  ]);
   const member = members.find((item) => item.id === member_id);
   if (!member) return notFound();
 
   const publishedCuts = member.montages.filter((montage) => Boolean(normalizeYoutubeId(montage.youtubeId)));
   const currentIndex = members.findIndex((item) => item.id === member.id);
-  const previous = members[(currentIndex - 1 + members.length) % members.length];
-  const next = members[(currentIndex + 1) % members.length];
+  const previous = members.length > 1 ? members[(currentIndex - 1 + members.length) % members.length] : member;
+  const next = members.length > 1 ? members[(currentIndex + 1) % members.length] : member;
   const photo = member.photo || '/images/members/ryuu.svg';
 
   return (
@@ -64,7 +68,23 @@ export default async function MemberPage({ params }: { params: Promise<{ member_
 
             <section className="mt-10 border-t border-white/8 pt-8" aria-labelledby="montage-title"><div className="mb-4 flex items-end justify-between gap-4"><div><div className="ui-eyebrow">Montage archive</div><h3 id="montage-title" className="mt-1 text-lg font-semibold">Selected cuts</h3></div><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/25">{publishedCuts.length ? `${publishedCuts.length} public cuts` : 'no public cuts yet'}</div></div><MemberTape montages={publishedCuts} /></section>
 
-            <div className="mt-10 border border-[color-mix(in_srgb,var(--acid)_20%,transparent)] bg-[color-mix(in_srgb,var(--acid)_4%,transparent)] p-5 sm:p-6"><div className="ui-eyebrow text-[var(--acid)]">Open trial path</div><h3 className="mt-2 font-display text-4xl uppercase sm:text-5xl">Think you can add to this?</h3><p className="mt-3 max-w-xl text-sm leading-6 text-white/45">We review players through their role, experience, availability, and ability to communicate in a team.</p><Button href="/recruitment" className="mt-5">Apply for a trial ↗</Button></div>
+            <div className="mt-10 border border-[color-mix(in_srgb,var(--acid)_20%,transparent)] bg-[color-mix(in_srgb,var(--acid)_4%,transparent)] p-5 sm:p-6">
+              <div className="ui-eyebrow text-[var(--acid)]">Open trial path</div>
+              <h3 className="mt-2 font-display text-4xl uppercase sm:text-5xl">Think you can add to this?</h3>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-white/45">We review players through their role, experience, availability, and ability to communicate in a team.</p>
+              {recruitmentAvailable ? (
+                <Button href="/recruitment" className="mt-5">Apply for a trial ↗</Button>
+              ) : (
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <span className="inline-flex cursor-not-allowed items-center justify-center gap-3 bg-[var(--acid)]/40 px-5 py-3 text-xs font-black uppercase tracking-[.18em] text-black/55" aria-disabled="true">
+                    Apply for a trial ↗
+                  </span>
+                  <Link href="/recruitment/closed" className="text-[10px] font-black uppercase tracking-[.16em] text-white/45 underline-offset-4 hover:text-white hover:underline">
+                    View recruitment status
+                  </Link>
+                </div>
+              )}
+            </div>
 
             <div className="mt-6 grid gap-2 sm:grid-cols-2"><Link href={`/roster/${previous.id}`} className="border border-white/8 p-4 transition-colors hover:border-white/18"><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/25">← Previous player</div><div className="mt-2 font-display text-2xl uppercase" style={{color:previous.accent}}>{previous.nickname}</div></Link><Link href={`/roster/${next.id}`} className="border border-white/8 p-4 text-right transition-colors hover:border-white/18"><div className="font-mono text-[9px] uppercase tracking-[.18em] text-white/25">Next player →</div><div className="mt-2 font-display text-2xl uppercase" style={{color:next.accent}}>{next.nickname}</div></Link></div>
           </Card>
