@@ -27,13 +27,43 @@ function mapRpcError(message: string): ApplicationWriteErrorCode {
   return 'APPLICATION_PERSISTENCE_FAILED';
 }
 
+async function assertOpeningEligible(jobId: string) {
+  const admin = createAdminClient();
+  const { data: job, error: jobError } = await admin
+    .from('recruitment_jobs')
+    .select('id,cycle_id,is_active,closes_at')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (jobError) throw new ApplicationWriteError('APPLICATION_PERSISTENCE_FAILED');
+  if (!job || !job.is_active || (job.closes_at && new Date(job.closes_at).getTime() <= Date.now())) {
+    throw new ApplicationWriteError('APPLICATION_CLOSED');
+  }
+
+  const { data: cycle, error: cycleError } = await admin
+    .from('recruitment_cycles')
+    .select('status')
+    .eq('id', job.cycle_id)
+    .maybeSingle();
+
+  if (cycleError) throw new ApplicationWriteError('APPLICATION_PERSISTENCE_FAILED');
+  if (!cycle || cycle.status !== 'OPEN') {
+    throw new ApplicationWriteError('APPLICATION_CLOSED');
+  }
+}
+
 export async function persistApplicationSubmission(
   input: ApplicationSubmissionV1,
   request: Request,
 ): Promise<{ applicationId: string }> {
+  const admin = createAdminClient();
+
+  // Eligibility is read-only and occurs after validation/probe/anti-abuse in the caller,
+  // before any storage or database write.
+  await assertOpeningEligible(input.job_id);
+
   const objectPath = `applications/${randomUUID()}.pdf`;
   const bytes = Buffer.from(await input.resume.arrayBuffer());
-  const admin = createAdminClient();
 
   const { error: uploadError } = await admin.storage
     .from(RECRUITMENT_RESUME_BUCKET)
