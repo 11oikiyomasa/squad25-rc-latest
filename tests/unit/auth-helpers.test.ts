@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { safeNext } from '../../lib/auth-helpers.ts';
+import { safeNext } from '../../lib/auth-helpers';
 
 test('safeNext accepts a local path', () => {
   assert.equal(safeNext('/admin/recruitment'), '/admin/recruitment');
