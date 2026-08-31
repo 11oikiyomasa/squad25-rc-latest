@@ -8,7 +8,7 @@
   --text-disabled: var(--muted);
   --brand: var(--acid);
   --brand-hover: var(--acid-hover);
-  --danger: var(--danger);
+  --danger: #ff6b6b;
   /* Phase 3 semantic aliases use already-locked palette values; no new colors are introduced. */
   --success: var(--acid);
   --warning: var(--ember);
