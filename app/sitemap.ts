@@ -7,9 +7,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: siteUrl, changeFrequency: 'weekly', priority: 1 },
     { url: `${siteUrl}/roster`, changeFrequency: 'weekly', priority: 0.9 },
+    ...members.map((member) => ({ url: `${siteUrl}/roster/${member.id}`, changeFrequency: 'monthly' as const, priority: 0.7 })),
     { url: `${siteUrl}/matches`, changeFrequency: 'weekly', priority: 0.85 },
     { url: `${siteUrl}/media`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${siteUrl}/recruitment`, changeFrequency: 'monthly', priority: 0.75 },
-    ...members.map((member) => ({ url: `${siteUrl}/member/${member.id}`, changeFrequency: 'monthly' as const, priority: 0.7 })),
   ];
 }
