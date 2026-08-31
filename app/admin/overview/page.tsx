@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import AdminStudioSafe from '@/components/admin-studio-safe';
+import AdminStudioV2 from '@/components/admin-studio-v2';
 
 export const metadata: Metadata = {
   title: 'Admin Overview — SQUAD.25',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminOverviewPage() {
-  return <AdminStudioSafe />;
+  return <AdminStudioV2 initialTab="overview" />;
 }
