@@ -27,8 +27,7 @@ function mapRpcError(message: string): ApplicationWriteErrorCode {
   return 'APPLICATION_PERSISTENCE_FAILED';
 }
 
-async function assertOpeningEligible(jobId: string) {
-  const admin = createAdminClient();
+async function assertOpeningEligible(jobId: string, admin: ReturnType<typeof createAdminClient>) {
   const { data: job, error: jobError } = await admin
     .from('recruitment_jobs')
     .select('id,cycle_id,is_active,closes_at')
@@ -52,15 +51,31 @@ async function assertOpeningEligible(jobId: string) {
   }
 }
 
+async function assertNotDuplicate(
+  input: ApplicationSubmissionV1,
+  admin: ReturnType<typeof createAdminClient>,
+) {
+  const { data, error } = await admin
+    .from('recruitment_applications')
+    .select('id')
+    .eq('job_id', input.job_id)
+    .eq('email', input.email)
+    .limit(1);
+
+  if (error) throw new ApplicationWriteError('APPLICATION_PERSISTENCE_FAILED');
+  if ((data ?? []).length > 0) throw new ApplicationWriteError('APPLICATION_DUPLICATE');
+}
+
 export async function persistApplicationSubmission(
   input: ApplicationSubmissionV1,
   request: Request,
 ): Promise<{ applicationId: string }> {
   const admin = createAdminClient();
 
-  // Eligibility is read-only and occurs after validation/probe/anti-abuse in the caller,
-  // before any storage or database write.
-  await assertOpeningEligible(input.job_id);
+  // All reads here are still after Zod, file probe and anti-abuse in the caller.
+  // No storage/database write occurs until eligibility and duplicate checks pass.
+  await assertOpeningEligible(input.job_id, admin);
+  await assertNotDuplicate(input, admin);
 
   const objectPath = `applications/${randomUUID()}.pdf`;
   const bytes = Buffer.from(await input.resume.arrayBuffer());
