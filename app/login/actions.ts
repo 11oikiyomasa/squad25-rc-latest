@@ -1,11 +1,8 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { safeNext } from '@/lib/auth-helpers';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
-
-function safeNext(value: FormDataEntryValue | null) {
-  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') ? value : '/admin';
-}
 
 export async function login(formData: FormData) {
   if (!isSupabaseConfigured()) redirect('/login?error=not_configured');

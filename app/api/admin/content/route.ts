@@ -23,6 +23,19 @@ function storagePathFromPublicUrl(value: string): string | null {
   }
 }
 
+function isAllowedImageSource(value: string) {
+  const source = value.trim();
+  if (source.startsWith('/images/')) return true;
+  try {
+    const url = new URL(source);
+    return url.protocol === 'https:'
+      && url.hostname === 'wyjsosamlkbwksrslona.supabase.co'
+      && url.pathname.startsWith(PUBLIC_OBJECT_MARKER);
+  } catch {
+    return false;
+  }
+}
+
 async function ensureAdmin() {
   if (!isSupabaseConfigured()) return { ok: false as const, status: 503, message: 'Supabase is not configured.' };
   const supabase = await createClient();
@@ -51,8 +64,10 @@ export async function PUT(request: Request) {
   const candidate = body as Record<string, unknown>;
   const profile = candidate.profile;
   const members = candidate.members;
-  if (!profile || typeof profile !== 'object' || !Array.isArray(members) || members.length !== 25) {
-    return NextResponse.json({ error: 'Content must contain exactly 25 members and a profile.' }, { status: 422 });
+  const achievements = candidate.achievements;
+  const gallery = candidate.gallery;
+  if (!profile || typeof profile !== 'object' || !Array.isArray(members) || members.length !== 25 || !Array.isArray(achievements) || !Array.isArray(gallery)) {
+    return NextResponse.json({ error: 'Content must contain a profile, exactly 25 members, achievements, and gallery.' }, { status: 422 });
   }
 
   const memberIds = members.map((m) => (m && typeof m === 'object' && typeof (m as Record<string, unknown>).id === 'string' ? (m as Record<string, unknown>).id : ''));
@@ -63,7 +78,6 @@ export async function PUT(request: Request) {
   const client = gate.supabase;
   const candidateProfile = profile as Record<string, unknown>;
 
-  // Validate the payload before handing it to the transactional database function.
   const profilePayload = {
     name: String(candidateProfile.name ?? '').slice(0, 80),
     tagline: String(candidateProfile.tagline ?? '').slice(0, 180),
@@ -86,7 +100,7 @@ export async function PUT(request: Request) {
       status: String(m.status),
       bio: String(m.bio ?? '').slice(0, 600),
       accent: String(m.accent ?? '#d7ff43').slice(0, 20),
-      photo: String(m.photo ?? '').slice(0, 500),
+      photo: String(m.photo ?? '').trim().slice(0, 500),
       montages: list.slice(0, 30).map((rawMontage) => {
         const montage = rawMontage as Record<string, unknown>;
         return {
@@ -100,8 +114,40 @@ export async function PUT(request: Request) {
     };
   });
 
+  const invalidMemberImage = normalizedMembers.find((member) => !member.photo || !isAllowedImageSource(member.photo));
+  if (invalidMemberImage) {
+    return NextResponse.json({ error: `Invalid or unsupported photo source for member ${invalidMemberImage.id}. Use /images/* or the SQUAD.25 Supabase media bucket.` }, { status: 422 });
+  }
+
   if (normalizedMembers.some((m) => !m.nickname || !m.name || !['EXP','JUNGLE','MID','GOLD','ROAM'].includes(m.role) || !['ACTIVE','BENCH','CAPTAIN'].includes(m.status))) {
     return NextResponse.json({ error: 'One or more member fields are invalid.' }, { status: 422 });
+  }
+
+  const normalizedAchievements = achievements.slice(0, 50).map((raw, index) => {
+    const achievement = raw as Record<string, unknown>;
+    const rawYear = String(achievement.year ?? '').trim();
+    const year = /^\d{4}$/.test(rawYear) ? Number(rawYear) : null;
+    return {
+      title: String(achievement.title ?? '').normalize('NFKC').trim().slice(0, 160),
+      description: String(achievement.note ?? achievement.description ?? '').normalize('NFKC').trim().slice(0, 600),
+      year,
+      sort_order: index,
+    };
+  }).filter((achievement) => achievement.title);
+
+  const normalizedGallery = gallery.slice(0, 100).map((raw, index) => {
+    const item = raw as Record<string, unknown>;
+    return {
+      title: String(item.title ?? '').normalize('NFKC').trim().slice(0, 160),
+      caption: String(item.meta ?? item.caption ?? '').normalize('NFKC').trim().slice(0, 300),
+      image_url: String(item.image ?? item.image_url ?? '').trim().slice(0, 800),
+      sort_order: index,
+    };
+  }).filter((item) => item.title);
+
+  const invalidGalleryImage = normalizedGallery.find((item) => !item.image_url || !isAllowedImageSource(item.image_url));
+  if (invalidGalleryImage) {
+    return NextResponse.json({ error: `Invalid or unsupported gallery image for ${invalidGalleryImage.title}. Use /images/* or the SQUAD.25 Supabase media bucket.` }, { status: 422 });
   }
 
   const previous = await getSquadContent();
@@ -110,11 +156,19 @@ export async function PUT(request: Request) {
   );
 
   const { data: result, error: publishError } = await client.rpc('publish_squad_content', {
-    payload: { profile: profilePayload, members: normalizedMembers },
+    payload: {
+      profile: profilePayload,
+      members: normalizedMembers,
+      achievements: normalizedAchievements,
+      gallery: normalizedGallery,
+    },
   });
   if (publishError) {
-    const status = publishError.code === '42501' ? 403 : publishError.code === '22023' ? 422 : publishError.code === '23503' ? 409 : 500;
-    return NextResponse.json({ error: publishError.message }, { status });
+    if (publishError.code === '42501' && publishError.message === 'Admin access required.') {
+      return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+    }
+    console.error('Admin publish RPC failed:', publishError);
+    return NextResponse.json({ error: 'Publish failed. The server could not save the content.' }, { status: 500 });
   }
 
   const response = await getSquadContent();
