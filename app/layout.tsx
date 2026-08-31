@@ -1,6 +1,7 @@
 import { IBM_Plex_Mono, Manrope, Space_Grotesk } from 'next/font/google';
 import type { Metadata } from 'next';
 import './globals.css';
+import './design-tokens.css';
 
 const display = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
