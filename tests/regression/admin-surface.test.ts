@@ -53,3 +53,11 @@ test('regression: recruitment inbox ignores stale list/detail responses', () => 
   assert.match(source, /version !== requestVersion\.current/);
   assert.match(source, /currentDetail !== detailVersion\.current/);
 });
+
+test('regression: publish RPC can execute its private admin check without exposing the private schema', () => {
+  const migration = read('supabase/migrations/20260831065450_fix_publish_content_private_schema_permissions.sql');
+  assert.match(migration, /alter function public\.publish_squad_content\(jsonb\) security definer/);
+  assert.match(migration, /set search_path = public/);
+  assert.match(migration, /revoke execute on function public\.publish_squad_content\(jsonb\) from anon/);
+  assert.match(migration, /grant execute on function public\.publish_squad_content\(jsonb\) to authenticated/);
+});
