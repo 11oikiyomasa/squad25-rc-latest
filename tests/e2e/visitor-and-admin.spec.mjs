@@ -28,19 +28,30 @@ test.describe('visitor flows', () => {
   });
 
   test('Visitor opens member', async ({ page }) => {
-    await page.goto('/member/ryuu');
-    await expect(page).toHaveURL(/\/member\/ryuu$/);
+    await page.goto('/roster/ryuu');
+    await expect(page).toHaveURL(/\/roster\/ryuu$/);
     await expect(page.getByText('RYUU', { exact: false }).first()).toBeVisible();
+  });
+
+  test('Legacy member route redirects to canonical roster route', async ({ page }) => {
+    await page.goto('/member/ryuu');
+    await expect(page).toHaveURL(/\/roster\/ryuu$/);
   });
 
   test('Visitor submits recruitment', async ({ page }) => {
     await page.goto('/recruitment');
-    const form = page.locator('form').filter({ has: page.locator('input[name="fullName"]') });
-    const hasForm = await form.count();
-    if (!hasForm) {
+    const requirementsLink = page.getByRole('link', { name: /View requirements/i }).first();
+    if (!(await requirementsLink.count())) {
       if (requireRecruitment) throw new Error('Recruitment E2E requires an active recruitment job in the E2E environment.');
       test.skip(true, 'No active recruitment job in this E2E environment.');
     }
+
+    await requirementsLink.click();
+    await expect(page.getByRole('link', { name: /Apply for this position/i })).toBeVisible();
+    await page.getByRole('link', { name: /Apply for this position/i }).click();
+
+    const form = page.locator('form').filter({ has: page.locator('input[name="fullName"]') });
+    await expect(form).toBeVisible();
 
     await page.route('**/api/recruitment', async (route) => {
       await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
