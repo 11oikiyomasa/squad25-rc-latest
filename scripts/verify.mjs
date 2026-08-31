@@ -20,12 +20,14 @@ const requiredRoutes = [
   'app/recruitment/success/page.tsx',
   'app/login/page.tsx',
   'app/admin/page.tsx',
+  'app/admin/layout.tsx',
   'app/admin/overview/page.tsx',
   'app/admin/roster/page.tsx',
   'app/admin/matches/page.tsx',
   'app/admin/media/page.tsx',
   'app/admin/recruitment/page.tsx',
   'app/admin/recruitment/[id]/page.tsx',
+  'app/admin/preview/page.tsx',
   'app/not-found.tsx',
   'app/403/page.tsx',
   'app/loading.tsx',
@@ -90,13 +92,16 @@ const legacyScrims = read('app/scrims/page.tsx');
 assert(legacyScrims.includes("redirect('/matches')"), 'Legacy /scrims route does not redirect to /matches');
 const legacyAdminScrims = read('app/admin/scrims/page.tsx');
 assert(legacyAdminScrims.includes("redirect('/admin/matches')"), 'Legacy admin /scrims route does not redirect to /admin/matches');
-const legacyAdminPreview = read('app/admin/preview/page.tsx');
-assert(legacyAdminPreview.includes("redirect('/admin/overview')"), 'Legacy admin /preview route does not redirect to /admin/overview');
+const adminPreview = read('app/admin/preview/page.tsx');
+assert(!adminPreview.includes("redirect('/admin/overview')"), 'Admin /preview is still a redirect-only page');
+assert(adminPreview.includes('localStorage.getItem(STORAGE_KEY)'), 'Admin /preview does not read the local draft');
+assert(adminPreview.includes('<MemberModal member={selected}'), 'Admin /preview does not render the selected draft member');
 const legacyMember = read('app/member/[id]/page.tsx');
 assert(legacyMember.includes('redirect(`/roster/${encodeURIComponent(id)}`)'), 'Legacy /member/[id] route does not redirect to canonical roster detail');
 
 const adminAuth = read('lib/admin-auth.ts');
 assert(adminAuth.includes("redirect('/login?error=not_authenticated&next=%2Fadmin')"), 'Unauthenticated admin users no longer route to login');
+assert(adminAuth.includes("redirect('/login?error=not_configured&next=%2Fadmin')"), 'Unconfigured admin access no longer fails closed');
 assert(adminAuth.includes("redirect('/403')"), 'Authenticated non-admin users no longer route to access denied');
 assert(read('app/403/page.tsx').includes('href="/login"'), '403 page lacks alternate-account path');
 assert(read('app/not-found.tsx').includes('href="/"'), '404 page lacks home recovery path');
@@ -113,8 +118,18 @@ for (const route of ['/roster', '/matches', '/media', '/recruitment']) assert(si
 assert(sitemap.includes('/roster/${member.id}'), 'Sitemap still uses legacy member URL');
 assert(!sitemap.includes('/member/${member.id}'), 'Sitemap contains legacy member route');
 
-const admin = read('app/admin/overview/page.tsx');
-for (const href of ['/admin/overview', '/admin/roster', '/admin/matches', '/admin/media', '/admin/recruitment']) assert(admin.includes(href), `Admin overview navigation missing ${href}`);
+const adminLayout = read('app/admin/layout.tsx');
+for (const href of ['/admin/overview', '/admin/roster', '/admin/matches', '/admin/media', '/admin/recruitment']) assert(adminLayout.includes(href), `Admin navigation missing ${href}`);
+assert(adminLayout.includes('await requireAdmin()'), 'Shared admin layout lacks server-side RBAC');
+assert(adminLayout.includes('href="/"'), 'Admin navigation lacks public-site escape');
+const adminPages = [
+  'app/admin/overview/page.tsx',
+  'app/admin/roster/page.tsx',
+  'app/admin/matches/page.tsx',
+  'app/admin/media/page.tsx',
+  'app/admin/recruitment/page.tsx',
+];
+for (const page of adminPages) assert(!read(page).includes('requireAdmin'), `Admin child page duplicates RBAC instead of using shared layout: ${page}`);
 const adminEntry = read('app/admin/page.tsx');
 assert(adminEntry.includes("redirect('/admin/overview')"), 'Admin root does not canonicalize to /admin/overview');
 const adminDetail = read('app/admin/recruitment/[id]/page.tsx');
@@ -162,8 +177,9 @@ console.log('VERIFY: PASS');
 console.log(`- Canonical IA routes: ${requiredRoutes.length}`);
 console.log('- Public navigation: Home / Roster / Matches / Media / Recruitment');
 console.log('- Admin navigation: Overview / Roster / Matches / Media / Recruitment');
-console.log('- Deep links: roster member / match / admin recruitment application');
-console.log('- Legacy aliases: /member, /scrims, /admin/preview, /admin/scrims redirect');
+console.log('- Admin security: shared layout RBAC + protected detail route');
+console.log('- Deep links: roster member / match / admin recruitment application / admin draft preview');
+console.log('- Legacy aliases: /member, /scrims, /admin/scrims redirect');
 console.log('- 404 / 403 / loading / error: present');
 console.log('- Dead CTA href="#": none');
 console.log('- Dummy console.log CTA handlers: none');
