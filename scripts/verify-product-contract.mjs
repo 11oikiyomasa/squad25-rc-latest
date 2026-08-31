@@ -98,11 +98,11 @@ assert(member.includes('priority />'), 'Member hero is not the priority image ca
 const apply = read('app/recruitment/[slug]/apply/page.tsx');
 assert(apply.includes('getRecruitmentOpeningState'), 'Apply route does not use canonical recruitment state resolver');
 assert(apply.includes("redirect('/recruitment/closed')"), 'Ineligible recruitment opening does not route to CLOSED');
-assert(!apply.includes('recruitment_jobs').replace(/\s/g, ''), 'Apply route unexpectedly contains direct recruitment persistence logic');
+assert(!apply.includes(".from('recruitment_applications')"), 'Apply route contains direct Application database access');
 
 const closed = read('app/recruitment/closed/page.tsx');
-assert(closed.includes("href=\"/recruitment\""), 'CLOSED state lacks recruitment recovery path');
-assert(closed.includes("href=\"/roster\""), 'CLOSED state lacks roster recovery path');
+assert(closed.includes('href="/recruitment"'), 'CLOSED state lacks recruitment recovery path');
+assert(closed.includes('href="/roster"'), 'CLOSED state lacks roster recovery path');
 assert(closed.includes('No other opening is selected automatically.'), 'CLOSED state does not communicate no automatic opening substitution');
 
 const adminAuth = read('lib/admin-auth.ts');
@@ -112,7 +112,6 @@ assert(adminAuth.includes("redirect('/login?error=not_authenticated&next=%2Fadmi
 const applicationAdmin = read('app/admin/recruitment/page.tsx');
 assert(applicationAdmin.length > 0, 'Admin Inbox surface is empty');
 
-const nonGoals = read('lib/product/contract.ts');
 for (const phrase of [
   'player social network',
   'public applicant-status tracking system',
@@ -120,7 +119,7 @@ for (const phrase of [
   'chat, direct-message, or community platform',
   'payment, commerce, tournament-bracket, or full esports operations platform',
   'general-purpose CMS',
-]) assert(nonGoals.includes(phrase), `V1 non-goal missing: ${phrase}`);
+]) assert(contract.includes(phrase), `V1 non-goal missing: ${phrase}`);
 
 if (failures.length) {
   console.error('PRODUCT CONTRACT VERIFY: FAIL');
