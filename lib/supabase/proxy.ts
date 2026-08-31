@@ -31,27 +31,6 @@ async function getRequestRole(
 }
 
 export async function updateSession(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return NextResponse.next({ request });
-
-  let supabaseResponse = NextResponse.next({ request });
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet, headers) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, options);
-        });
-        Object.entries(headers).forEach(([name, value]) => supabaseResponse.headers.set(name, value));
-      },
-    },
-  });
-
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = pathname.startsWith('/admin');
   const isAdminApiRoute = pathname.startsWith('/api/admin/');
@@ -71,6 +50,31 @@ export async function updateSession(request: NextRequest) {
     if (!hasValidRecruitmentOrigin(request)) return securityResponse('SEC_INVALID_ORIGIN');
     if (exceedsRequestBodyLimit(request)) return securityResponse('PAYLOAD_TOO_LARGE');
   }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !key) {
+    if (isAdminRoute || isAdminApiRoute) return securityResponse('INTERNAL_ERROR');
+    return NextResponse.next({ request });
+  }
+
+  let supabaseResponse = NextResponse.next({ request });
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet, headers) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        supabaseResponse = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => {
+          supabaseResponse.cookies.set(name, value, options);
+        });
+        Object.entries(headers).forEach(([name, value]) => supabaseResponse.headers.set(name, value));
+      },
+    },
+  });
 
   if (isAdminRoute || isAdminApiRoute) {
     const { data } = await supabase.auth.getClaims();
