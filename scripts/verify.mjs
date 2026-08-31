@@ -82,6 +82,8 @@ const matchDetail = read('app/matches/[match_id]/page.tsx');
 assert(matchDetail.includes('alternates: { canonical: `/matches/${scrim.id}` }'), 'Match detail canonical metadata is missing');
 assert(matchDetail.includes('href="/matches"'), 'Match detail lacks return path');
 assert(matchDetail.includes('aria-label="Breadcrumb"'), 'Match detail breadcrumb is missing');
+const scrimsContent = read('components/scrims-content.tsx');
+assert(scrimsContent.includes('href={`/matches/${scrim.id}`}'), 'Match index does not connect public match detail routes');
 const media = read('app/media/page.tsx');
 assert(media.includes("alternates: { canonical: '/media' }"), 'Media canonical route is missing');
 const legacyScrims = read('app/scrims/page.tsx');
@@ -119,6 +121,8 @@ const adminDetail = read('app/admin/recruitment/[id]/page.tsx');
 assert(adminDetail.includes('await requireAdmin()'), 'Admin recruitment detail lacks server-side RBAC');
 assert(adminDetail.includes('aria-label="Breadcrumb"'), 'Admin recruitment detail breadcrumb is missing');
 assert(adminDetail.includes('href="/admin/recruitment"'), 'Admin recruitment detail lacks return path');
+const inbox = read('components/recruitment-inbox.tsx');
+assert(inbox.includes('/api/admin/recruitment/${id}'), 'Admin recruitment inbox does not resolve application detail data');
 
 const home = read('components/home-ux.tsx');
 assert(home.includes("from '@/components/member-card'"), 'Homepage does not use shared MemberCard');
