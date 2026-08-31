@@ -28,14 +28,14 @@ test('clientIp prefers the first forwarded address and falls back safely', () =>
   assert.equal(clientIp(new Request('https://example.test')), '0.0.0.0');
 });
 
-test('PDF validation requires the expected extension, MIME type, and size', () => {
+test('PDF validation requires the expected extension, MIME type, and size', async () => {
   const valid = new File([Buffer.from('%PDF-1.7\n')], 'resume.pdf', { type: 'application/pdf' });
   const wrongName = new File([Buffer.from('%PDF-1.7\n')], 'resume.txt', { type: 'application/pdf' });
   const wrongType = new File([Buffer.from('%PDF-1.7\n')], 'resume.pdf', { type: 'text/plain' });
   assert.equal(assertPdf(valid), true);
   assert.equal(assertPdf(wrongName), false);
   assert.equal(assertPdf(wrongType), false);
-  assert.equal(hasPdfMagicBytes(valid), true);
+  assert.equal(await hasPdfMagicBytes(valid), true);
 });
 
 test('PDF magic-byte validation rejects a renamed non-PDF file', async () => {
