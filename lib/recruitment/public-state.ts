@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/supabase/server';
 
 type RecruitmentJob = {
   id: string;
@@ -44,6 +44,14 @@ function isEligible(job: RecruitmentJob, cycle: RecruitmentCycle | null, now: nu
   );
 }
 
+async function loadCycles(admin: ReturnType<typeof createAdminClient>) {
+  const { data, error } = await admin
+    .from('recruitment_cycles')
+    .select('id,status,starts_at,closes_at');
+  if (error) throw new Error('Recruitment cycle lookup failed.');
+  return (data ?? []) as RecruitmentCycle[];
+}
+
 export async function getRecruitmentOpeningState(slug: string): Promise<RecruitmentOpeningState> {
   if (!isSupabaseConfigured()) return { kind: 'missing' };
 
@@ -72,14 +80,26 @@ export async function getRecruitmentOpeningState(slug: string): Promise<Recruitm
     : { kind: 'ineligible', job: normalizedJob };
 }
 
+export async function getEligibleRecruitmentOpenings(): Promise<RecruitmentJob[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const admin = createAdminClient();
+  const [{ data: jobs, error: jobError }, cycles] = await Promise.all([
+    admin
+      .from('recruitment_jobs')
+      .select('id,title,slug,description,requirements,closes_at,is_active,cycle_id')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }),
+    loadCycles(admin),
+  ]);
+
+  if (jobError) throw new Error('Recruitment opening lookup failed.');
+  const now = Date.now();
+  const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]));
+  return ((jobs ?? []) as RecruitmentJob[]).filter((job) => isEligible(job, cycleById.get(job.cycle_id) ?? null, now));
+}
+
 export async function hasEligibleRecruitmentOpening(): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
-
-  const supabase = await createClient();
-  const { count, error } = await supabase
-    .from('recruitment_jobs')
-    .select('id', { count: 'exact', head: true });
-
-  if (error) throw new Error('Recruitment availability lookup failed.');
-  return (count ?? 0) > 0;
+  const openings = await getEligibleRecruitmentOpenings();
+  return openings.length > 0;
 }
