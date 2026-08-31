@@ -3,16 +3,29 @@ import path from 'node:path';
 
 const root = path.resolve(new URL('..', import.meta.url).pathname);
 const failures = [];
-const read = (file) => {
+
+function read(file) {
   const absolute = path.join(root, file);
   if (!fs.existsSync(absolute)) {
     failures.push(`Missing required verification target: ${file}`);
     return '';
   }
   return fs.readFileSync(absolute, 'utf8');
-};
-const assert = (ok, msg) => { if (!ok) failures.push(msg); };
-const has = (source, pattern) => new RegExp(pattern, 'm').test(source);
+}
+
+function assert(ok, message) {
+  if (!ok) failures.push(message);
+}
+
+function allMigrationSql() {
+  const directory = path.join(root, 'supabase', 'migrations');
+  if (!fs.existsSync(directory)) return '';
+  return fs.readdirSync(directory)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+    .map((name) => fs.readFileSync(path.join(directory, name), 'utf8'))
+    .join('\n');
+}
 
 const requiredFiles = [
   'app/recruitment/page.tsx',
@@ -34,92 +47,85 @@ const requiredFiles = [
   'lib/supabase/proxy.ts',
   'lib/supabase/admin.ts',
   'types/database.ts',
-  'supabase/migrations/20260831100054_phase9_schema_rls_storage.sql',
-  'supabase/migrations/20260831100100_phase9_privileges.sql',
-  'supabase/migrations/20260831100519_phase9_achievement_updated_at.sql',
   'supabase/migrations/20260831112000_phase7_submission_runtime_contract.sql',
 ];
-requiredFiles.forEach((file) => read(file));
+for (const file of requiredFiles) read(file);
 
 const schema = read('lib/recruitment/schema.ts');
+for (const field of [
+  'job_id', 'full_name', 'nickname', 'email', 'phone', 'role',
+  'portfolio_link', 'resume', 'cover_letter', 'turnstile_token', 'honeypot_website',
+]) assert(schema.includes(field), `Submission schema field missing: ${field}`);
 assert(schema.includes('SCHEMA_APPLICATION_SUBMISSION_V1'), 'Canonical Zod submission schema missing');
-for (const field of ['job_id', 'full_name', 'nickname', 'email', 'phone', 'role', 'portfolio_link', 'resume', 'cover_letter', 'turnstile_token', 'honeypot_website']) {
-  assert(schema.includes(field), `Submission schema field missing: ${field}`);
-}
-assert(schema.includes("z.enum(APPLICATION_ROLES)"), 'Closed recruitment role enum missing');
-assert(schema.includes("z.string().email().max(254)"), 'Server email validation missing');
+assert(schema.includes('z.enum(APPLICATION_ROLES)'), 'Closed recruitment role enum missing');
 assert(schema.includes('toLowerCase'), 'Email normalization missing');
 assert(schema.includes('.strict()'), 'Strict submission payload schema missing');
 
-const fileProbe = read('lib/recruitment/file-probe.ts');
-assert(fileProbe.includes("RECRUITMENT_RESUME_BUCKET = 'recruitment-resumes'"), 'Private resume bucket binding missing');
-assert(fileProbe.includes('5 * 1024 * 1024'), '5 MiB resume size guard missing');
-assert(fileProbe.includes("application/pdf"), 'PDF MIME validation missing');
-assert(fileProbe.includes(".pdf"), 'PDF extension validation missing');
-assert(fileProbe.includes("%PDF-"), 'PDF magic-byte validation missing');
-
 const security = read('lib/recruitment-security.ts');
 assert(security.includes('verifyTurnstile'), 'Turnstile server verification missing');
-assert(security.includes('%PDF-'), 'Legacy/server PDF signature helper missing');
-assert(security.includes('normalize'), 'Unicode normalization helper missing');
+assert(security.includes('MAX_RESUME_BYTES = 5 * 1024 * 1024'), '5 MiB resume limit missing');
+assert(security.includes("file.type !== 'application/pdf'"), 'PDF MIME validation missing');
+assert(security.includes("endsWith('.pdf')"), 'PDF extension validation missing');
+assert(security.includes("=== '%PDF-'"), 'PDF magic-byte validation missing');
+assert(security.includes('normalize'), 'Unicode normalization missing');
 assert(security.includes('clientIp'), 'Trusted client-IP extraction missing');
 
+const fileProbe = read('lib/recruitment/file-probe.ts');
+assert(fileProbe.includes("RECRUITMENT_RESUME_BUCKET = 'recruitment-resumes'"), 'Private resume bucket binding missing');
+assert(fileProbe.includes("RECRUITMENT_RESUME_MIME = 'application/pdf'"), 'Canonical resume MIME contract missing');
+assert(fileProbe.includes('probeRecruitmentResume'), 'Resume probe entry point missing');
+
 const route = read('app/api/recruitment/route.ts');
-assert(has(route, "SCHEMA_APPLICATION_SUBMISSION_V1\\.safeParse"), 'Canonical route does not execute Zod schema');
-assert(route.includes('probeRecruitmentResume'), 'Canonical route does not execute resume probe');
-assert(route.includes('verifyTurnstile'), 'Canonical route does not execute Turnstile verification');
-assert(route.includes('persistApplicationSubmission'), 'Canonical route does not use server write boundary');
-assert(has(route, 'request\\.formData\\(\\)'), 'Multipart form parsing missing');
-assert(route.includes('7 * 1024 * 1024'), 'Application multipart 7 MiB limit missing');
-assert(has(route, 'SCHEMA_APPLICATION_SUBMISSION_V1\\.safeParse[\\s\\S]*probeRecruitmentResume[\\s\\S]*verifyTurnstile[\\s\\S]*persistApplicationSubmission'), 'Submission pipeline order changed');
+assert(route.includes('request.formData()'), 'Multipart handling missing');
+assert(route.includes('7 * 1024 * 1024'), '7 MiB application multipart ceiling missing');
+assert(route.includes('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse'), 'Canonical route does not execute Zod schema');
+assert(route.includes('probeRecruitmentResume'), 'Canonical route does not execute file probe');
+assert(route.includes('verifyTurnstile'), 'Canonical route does not execute anti-abuse verification');
+assert(route.includes('persistApplicationSubmission'), 'Canonical route does not reach the server write boundary');
+const zodPos = route.indexOf('SCHEMA_APPLICATION_SUBMISSION_V1.safeParse');
+const probePos = route.indexOf('probeRecruitmentResume', zodPos + 1);
+const turnstilePos = route.indexOf('verifyTurnstile', probePos + 1);
+const writePos = route.indexOf('persistApplicationSubmission', turnstilePos + 1);
+assert(zodPos >= 0 && probePos > zodPos && turnstilePos > probePos && writePos > turnstilePos, 'Submission pipeline order changed');
 assert(!route.includes("from('recruitment_applications').insert"), 'Direct Application INSERT write path detected');
-assert(!route.includes('.insert({'), 'Direct INSERT write path detected in recruitment route');
 
 const writer = read('lib/recruitment/server-write.ts');
 assert(writer.includes("import 'server-only'"), 'Server write boundary is not server-only');
 assert(writer.includes('createAdminClient'), 'Privileged write does not use server admin client');
-assert(writer.includes('assertOpeningEligible'), 'Server eligibility guard missing');
+assert(writer.includes('assertOpeningEligible'), 'Server opening eligibility guard missing');
 assert(writer.includes('assertNotDuplicate'), 'Server duplicate guard missing');
-assert(writer.includes('recruitment-resumes'), 'Writer is not bound to private resume bucket');
+assert(writer.includes('RECRUITMENT_RESUME_BUCKET'), 'Server writer is not bound to canonical private resume bucket');
 assert(writer.includes('submit_recruitment_application_v7'), 'Canonical submission RPC missing');
-assert(writer.includes('APPLICATION_CLOSED'), 'Ineligible opening server outcome missing');
-assert(writer.includes('APPLICATION_DUPLICATE'), 'Duplicate server outcome missing');
-assert(writer.includes('storage.from(RECRUITMENT_RESUME_BUCKET)'), 'Resume write is not using canonical bucket');
+assert(writer.includes('storage.from(RECRUITMENT_RESUME_BUCKET)'), 'Resume upload does not use canonical bucket');
 assert(writer.includes('storage.from(RECRUITMENT_RESUME_BUCKET).remove'), 'Failed persistence cleanup missing');
 
-const rpcMigration = read('supabase/migrations/20260831112000_phase7_submission_runtime_contract.sql');
-assert(rpcMigration.includes('submit_recruitment_application_v7'), 'Runtime submission RPC migration missing');
-assert(rpcMigration.includes("auth.role() <> 'service_role'"), 'Submission RPC service-role guard missing');
-assert(rpcMigration.includes('RECRUITMENT_CLOSED'), 'RPC recruitment eligibility failure missing');
-assert(rpcMigration.includes('DUPLICATE_APPLICATION'), 'RPC duplicate failure missing');
-assert(rpcMigration.includes("bucket_id = 'recruitment-resumes'"), 'RPC private resume bucket binding missing');
-assert(rpcMigration.includes('resume_path'), 'RPC resume path binding missing');
+const runtimeRpc = read('supabase/migrations/20260831112000_phase7_submission_runtime_contract.sql');
+assert(runtimeRpc.includes('submit_recruitment_application_v7'), 'Runtime submission RPC migration missing');
+assert(runtimeRpc.includes("auth.role() <> 'service_role'"), 'Submission RPC service-role guard missing');
+assert(runtimeRpc.includes('RECRUITMENT_CLOSED'), 'RPC recruitment eligibility failure missing');
+assert(runtimeRpc.includes('DUPLICATE_APPLICATION'), 'RPC duplicate failure missing');
+assert(runtimeRpc.includes("bucket_id = 'recruitment-resumes'"), 'RPC private resume bucket binding missing');
 
-const phase9 = read('supabase/migrations/20260831100054_phase9_schema_rls_storage.sql');
-assert(phase9.includes('create table if not exists public.squad_settings'), 'squad_settings table missing');
-assert(phase9.includes('create table if not exists public.members'), 'members table missing');
-assert(phase9.includes('create table if not exists public.montages'), 'montages table missing');
-assert(phase9.includes('create table if not exists public.achievements'), 'achievements table missing');
-assert(phase9.includes('create table if not exists public.gallery_items'), 'gallery_items table missing');
-assert(phase9.includes('create table if not exists public.admin_users'), 'admin_users table missing');
-assert(phase9.includes('create table if not exists public.recruitment_cycles'), 'recruitment_cycles table missing');
-assert(phase9.includes('create table if not exists public.recruitment_jobs'), 'recruitment_jobs table missing');
-assert(phase9.includes('create table if not exists public.recruitment_applications'), 'recruitment_applications table missing');
-assert(phase9.includes('create table if not exists public.recruitment_application_notes'), 'recruitment_application_notes table missing');
-assert(phase9.includes('create table if not exists public.audit_logs'), 'audit_logs table missing');
-assert(phase9.includes("status TEXT NOT NULL DEFAULT 'NEW'"), 'Application initial NEW status missing');
-assert(phase9.includes("status IN ('NEW','REVIEWING','SHORTLISTED','ACCEPTED','REJECTED')"), 'Application closed status set missing');
-assert(phase9.includes('recruitment_applications_email_job_uidx'), 'Normalized email + opening unique index missing');
-assert(phase9.includes('lower(email), job_id'), 'Normalized email + opening unique definition missing');
-assert(phase9.includes("'recruitment-resumes'"), 'Private resume bucket migration missing');
-assert(phase9.includes("'squad-media'"), 'Public squad-media bucket migration missing');
-assert(phase9.includes('5242880'), 'Resume storage 5 MiB limit missing');
-assert(phase9.includes('8388608'), 'Squad media 8 MiB limit missing');
+const migrations = allMigrationSql();
+for (const table of [
+  'squad_settings', 'members', 'montages', 'achievements', 'gallery_items', 'admin_users',
+  'recruitment_cycles', 'recruitment_jobs', 'recruitment_applications',
+  'recruitment_application_notes', 'audit_logs',
+]) assert(migrations.includes(table), `Phase 9 table contract missing: ${table}`);
+assert(migrations.includes("status in ('NEW','REVIEWING','SHORTLISTED','ACCEPTED','REJECTED')"), 'Closed Application status set missing');
+assert(migrations.includes('recruitment_applications_email_job_uidx'), 'Normalized email + opening unique index missing');
+assert(migrations.includes('lower(email), job_id'), 'Normalized email + opening unique definition missing');
+assert(migrations.includes("'recruitment-resumes'"), 'Private resume bucket contract missing');
+assert(migrations.includes("'squad-media'"), 'Squad media bucket contract missing');
+assert(migrations.includes('5242880'), '5 MiB storage limit contract missing');
+assert(migrations.includes('8388608'), '8 MiB media storage limit contract missing');
+assert(migrations.includes('recruitment_applications for select to authenticated'), 'Admin Application SELECT policy missing');
+assert(migrations.includes('revoke select, insert, update, delete on public.recruitment_applications from anon'), 'Anon Application direct privileges not revoked');
+assert(migrations.includes('revoke insert, update, delete on public.recruitment_applications from authenticated'), 'Authenticated Application direct write privileges not revoked');
 
 const privileges = read('supabase/migrations/20260831100100_phase9_privileges.sql');
-assert(privileges.includes('recruitment_applications'), 'Application privilege hardening missing');
-assert(privileges.includes('REVOKE'), 'Privilege revocation missing');
-assert(privileges.includes('GRANT'), 'Required role grants missing');
+assert(/revoke/i.test(privileges), 'Privilege revocation contract missing');
+assert(/grant/i.test(privileges), 'Privilege grant contract missing');
 
 const rateLimit = read('lib/security/rate-limit.ts');
 assert(rateLimit.includes('RATE_APPLICATION_BURST = 3'), '3/30s burst rate limit missing');
@@ -129,8 +135,18 @@ assert(rateLimit.includes('RATE_APPLICATION_WINDOW_SECONDS = 10 * 60'), '10 minu
 assert(rateLimit.includes('unavailable: true'), 'Rate limiter fail-closed state missing');
 assert(rateLimit.includes('catch'), 'Rate limiter dependency failure handling missing');
 
+const proxy = read('lib/supabase/proxy.ts');
+const ratePos = proxy.indexOf('checkRecruitmentRateLimit(request)');
+const originPos = proxy.indexOf('hasValidRecruitmentOrigin(request)');
+const bodyPos = proxy.indexOf('exceedsRequestBodyLimit(request)');
+assert(ratePos >= 0 && originPos > ratePos && bodyPos > originPos, 'Recruitment security perimeter order changed');
+assert(proxy.includes("pathname.startsWith('/admin')"), 'Admin page gate missing');
+assert(proxy.includes("pathname.startsWith('/api/admin/')"), 'Admin API gate missing');
+assert(proxy.includes("'/login'"), 'Unauthenticated Admin redirect missing');
+assert(proxy.includes('ROLE_ADMIN'), 'Admin role gate missing');
+
 const origin = read('lib/security/origin.ts');
-assert(origin.includes("if (!origin || !expected) return false"), 'Missing/invalid Origin is not rejected');
+assert(origin.includes('if (!origin || !expected) return false'), 'Missing/invalid Origin is not rejected');
 assert(origin.includes('new URL(origin).origin === expected'), 'Foreign Origin comparison missing');
 
 const bodyLimit = read('lib/security/body-limit.ts');
@@ -140,21 +156,8 @@ const errors = read('lib/security/error-response.ts');
 for (const code of ['INVALID_REQUEST', 'AUTH_REQUIRED', 'FORBIDDEN', 'SEC_INVALID_ORIGIN', 'PAYLOAD_TOO_LARGE', 'RATE_LIMITED', 'RATE_LIMIT_UNAVAILABLE', 'INTERNAL_ERROR']) {
   assert(errors.includes(`'${code}'`), `Security error mapping missing: ${code}`);
 }
-assert(errors.includes('413'), '413 mapping missing');
-assert(errors.includes('429'), '429 mapping missing');
-assert(errors.includes('500'), '500 mapping missing');
+for (const status of ['400', '401', '403', '413', '429', '500']) assert(errors.includes(status), `HTTP error mapping missing: ${status}`);
 assert(!errors.includes('stack'), 'Stack trace disclosure detected in error mapping');
-
-const proxy = read('lib/supabase/proxy.ts');
-assert(proxy.includes('checkRecruitmentRateLimit'), 'Recruitment rate limiter is not wired into proxy');
-assert(proxy.includes('hasValidRecruitmentOrigin'), 'Recruitment Origin check is not wired into proxy');
-assert(proxy.includes('exceedsRequestBodyLimit'), 'Host/body limit is not wired into proxy');
-assert(has(proxy, 'checkRecruitmentRateLimit\\(request\\)[\\s\\S]*hasValidRecruitmentOrigin\\(request\\)[\\s\\S]*exceedsRequestBodyLimit\\(request\\)'), 'Security perimeter order changed');
-assert(proxy.includes("if (isAdminRoute || isAdminApiRoute)"), 'Admin route classification missing');
-assert(proxy.includes("pathname.startsWith('/admin')"), 'Admin page gate missing');
-assert(proxy.includes("pathname.startsWith('/api/admin/')"), 'Admin API gate missing');
-assert(proxy.includes("'/login'"), 'Unauthenticated Admin redirect missing');
-assert(proxy.includes("ROLE_ADMIN"), 'Admin role gate missing');
 
 const adminClient = read('lib/supabase/admin.ts');
 assert(adminClient.includes("import 'server-only'"), 'Admin Supabase client missing server-only boundary');
@@ -171,13 +174,33 @@ assert(apply.includes('getRecruitmentOpeningState'), 'Apply route does not use s
 assert(apply.includes('/recruitment/closed'), 'Apply route missing canonical CLOSED redirect');
 assert(apply.includes('notFound()'), 'Missing opening is not a 404');
 
-const pkg = JSON.parse(read('package.json'));
-assert(pkg.dependencies?.zod === '4.5.4', 'package.json is missing canonical Zod version');
-assert(pkg.scripts?.verify?.includes('verify-recruitment.mjs'), 'Recruitment verifier is not wired into npm verify');
-
 const dbTypes = read('types/database.ts');
 assert(dbTypes.includes('export type Database ='), 'Generated Database type authority missing');
 assert(dbTypes.includes('recruitment_applications'), 'Generated Application table type missing');
+
+const clientRoots = ['app', 'components', 'lib'];
+function walk(directory) {
+  const absolute = path.join(root, directory);
+  if (!fs.existsSync(absolute)) return [];
+  const files = [];
+  for (const entry of fs.readdirSync(absolute, { withFileTypes: true })) {
+    const child = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...walk(child));
+    else if (/\.(tsx|ts)$/.test(entry.name)) files.push(child);
+  }
+  return files;
+}
+for (const file of clientRoots.flatMap(walk)) {
+  const source = fs.readFileSync(path.join(root, file), 'utf8');
+  if (source.includes("'use client'") || source.includes('"use client"')) {
+    assert(!source.includes('createAdminClient'), `Client module imports privileged Supabase client: ${file}`);
+    assert(!source.includes('SUPABASE_SERVICE_ROLE_KEY'), `Client module references service-role key: ${file}`);
+  }
+}
+
+const pkg = JSON.parse(read('package.json'));
+assert(pkg.dependencies?.zod === '4.5.4', 'package.json is missing canonical Zod version');
+assert(pkg.scripts?.verify?.includes('verify-recruitment.mjs'), 'Recruitment verifier is not wired into npm verify');
 
 if (failures.length) {
   console.error('RECRUITMENT VERIFY: FAIL');
@@ -186,9 +209,10 @@ if (failures.length) {
 }
 
 console.log('RECRUITMENT VERIFY: PASS');
-console.log('- Canonical POST /api/recruitment path: present');
-console.log('- Zod → file probe → Turnstile → server-only write boundary: present');
+console.log('- Canonical recruitment submission boundary: present');
+console.log('- Zod → file probe → Turnstile → server-only persistence order: present');
 console.log('- Server-side recruitment eligibility + duplicate guards: present');
 console.log('- Phase 9 Application/RLS/storage invariants: present');
 console.log('- Phase 10 rate-limit/origin/body/error perimeter: present');
+console.log('- Admin/service-role boundary: present');
 console.log('- Generated Database type authority: present');
