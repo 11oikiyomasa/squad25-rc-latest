@@ -4,8 +4,10 @@
 **Application:** SQUAD.25 / squad25-rc-latest  
 **Repository:** `11oikiyomasa/squad25-rc-latest`  
 **Source branch:** `main`  
-**Baseline commit:** `11b5f05c36589df3230173863e4b79550c60bc22`  
+**Application baseline commit:** `11b5f05c36589df3230173863e4b79550c60bc22`  
+**Current main HEAD:** `8832a1ec618a2f76d8b75aee33162e1dc6352d71` (documentation-only descendant)  
 **Production Supabase project ref:** `wyjsosamlkbwksrslona`  
+**Supabase organization plan:** Free  
 **Production Vercel project:** `squad25-rc-latest`  
 **Audit date:** 2026-08-31
 
@@ -15,15 +17,16 @@
 
 - Repository: `11oikiyomasa/squad25-rc-latest`
 - Production source branch: `main`
-- Approved baseline SHA: `11b5f05c36589df3230173863e4b79550c60bc22`
+- Application baseline SHA: `11b5f05c36589df3230173863e4b79550c60bc22`
+- Current `main` contains a documentation-only descendant commit and no application-code change after the approved application baseline.
 - PR #25 is open and is **not** the source of truth; its head SHA differs from `main`.
 - Database schema/security behavior is governed by `supabase/migrations/`.
 
 ## 2. CI/CD
 
-**Decision: PASS**
+**Decision: PASS for application baseline**
 
-CI run #460 for the baseline commit completed successfully.
+CI run #460 for the application baseline completed successfully.
 
 Verified stages:
 
@@ -34,11 +37,13 @@ Verified stages:
 - production server start
 - public route smoke tests
 
+A later documentation-only commit was added to record this report; it does not alter application behavior.
+
 ## 3. VERCEL PRODUCTION
 
-**Decision: PASS**
+**Decision: PASS for approved application baseline**
 
-Latest production deployment:
+Latest verified production deployment for the approved application baseline:
 
 - Deployment: `dpl_JCYJtayuqxhLHJ2DVKc36hR42uQC`
 - State: `READY`
@@ -46,7 +51,7 @@ Latest production deployment:
 - Git ref: `main`
 - Git SHA: `11b5f05c36589df3230173863e4b79550c60bc22`
 
-The production deployment SHA matches the approved `main` baseline SHA.
+The production app code matches the approved application baseline. The only newer `main` commit is documentation-only.
 
 Primary aliases include:
 
@@ -54,7 +59,7 @@ Primary aliases include:
 - `squad25-rc-latest-kontolgeming0909-9680.vercel.app`
 - `squad25-rc-latest-git-main-kontolgeming0909-9680.vercel.app`
 
-Runtime health endpoint returned HTTP 200 with database connectivity healthy.
+Runtime health returned HTTP 200 and database connectivity was healthy.
 
 ## 4. SUPABASE PRODUCTION
 
@@ -64,36 +69,32 @@ Runtime health endpoint returned HTTP 200 with database connectivity healthy.
 - Region: `ap-northeast-1`
 - Status: `ACTIVE_HEALTHY`
 - PostgreSQL: 17.6.1.166
+- Organization plan: Free
 
-Current remote migration history ends at:
+Current remote migration history is recorded through the Phase 0 remediation migration.
 
-`20260830201946 phase7_close_direct_write_paths_reapply`
-
-`20260830202148 phase0_security_and_performance_hardening`
-
-The Phase 0 hardening migration was applied to production during this remediation.
+The Phase 0 hardening migration was applied to production and direct recruitment application writes from `anon`/`authenticated` were removed.
 
 ## 5. RLS / PRIVILEGES
 
-**Decision: PASS for reviewed public application boundary.**
+**Decision: PASS for reviewed application/public data boundaries**
 
 All audited `public` tables have RLS enabled.
 
-Recruitment application write access was previously too broad and has now been removed from `anon` and `authenticated` roles. Verified current privileges for the recruitment application boundary are read-only for authenticated admins, with mutations performed through controlled RPC/server paths.
+Recruitment application writes are no longer available to `anon` or `authenticated`; authenticated admins retain read access and controlled processing occurs through server/RPC paths.
 
-Public recruitment job access remains read-only and limited to active, non-expired jobs.
+Public recruitment jobs remain read-only and constrained to active/non-expired records.
 
-The public submission RPC is server-only and executable only by `service_role`.
+The public recruitment submission RPC is service-role-only.
 
 ## 6. SECURITY FINDINGS / TECHNICAL DEBT
 
-### Accepted as follow-up hardening (not unresolved public bypasses)
+### Accepted follow-up hardening
 
-1. `admin_update_recruitment_application_v7` remains `SECURITY DEFINER` and executable by `authenticated`; the function performs an explicit admin authorization check. This remains a Supabase advisor warning and should be revisited as a hardening task.
-2. Supabase Auth leaked-password protection is disabled. This is an account-security hardening item.
-3. Supabase performance advisor reports several unused indexes. Do not remove them blindly; usage can change as production traffic grows.
-
-These items are recorded as debt rather than hidden.
+1. `admin_update_recruitment_application_v7` remains `SECURITY DEFINER` and executable by `authenticated`, but the function explicitly requires `auth.role() = 'authenticated'` and `private.is_admin()`. This remains a Supabase advisor warning and is a hardening follow-up, not an unresolved anonymous bypass.
+2. Supabase Auth leaked-password protection is disabled. Record as account-security hardening.
+3. Supabase performance advisor reports unused indexes. Do not remove them blindly; reassess with real production query traffic.
+4. A historical Vercel runtime error (`JWT issued at future`) was observed on an older deployment, not the current approved baseline deployment. It is retained in the known-issues register for observation rather than treated as a current production outage.
 
 ## 7. ENVIRONMENT / SECRETS
 
@@ -108,19 +109,28 @@ These items are recorded as debt rather than hidden.
 
 **STATUS: NO-GO / EVIDENCE REQUIRED**
 
-A valid Phase 0 exit requires evidence that production has a recoverable backup and that the recovery procedure has been tested.
+The production Supabase organization is on the Free plan. Supabase documentation states automatic daily backups are available for Pro, Team, and Enterprise plans; Free projects should use regular `supabase db dump` logical backups and keep them off-site. citeturn469739search4
 
-The available project tooling in this audit does not expose the Supabase backup/restore operation or the production database password needed to create and restore a logical dump.
+The available connected tooling does not provide the production database password or a backup/restore operation, so a real backup artifact and restore test cannot honestly be claimed from this audit session.
 
-Required evidence before Phase 0 can be closed:
+Required evidence before Phase 0 can close:
 
-- backup timestamp or backup artifact identifier
-- backup location / retention
-- restore test target
-- restore success result
-- confirmation that critical database state is recoverable
+- logical backup created with `supabase db dump` (or equivalent verified production backup)
+- backup stored outside the production project
+- backup timestamp and checksum/artifact ID recorded
+- restore performed to a safe non-production target
+- restored schema/data sanity checked
+- restore result recorded
 
-A database backup must not be claimed merely because the production project is healthy.
+Recommended logical-backup sequence (run by an operator with database credentials):
+
+```bash
+supabase link --project-ref wyjsosamlkbwksrslona
+supabase db dump --linked -f phase0-schema.sql
+supabase db dump --linked --data-only --use-copy -f phase0-data.sql
+```
+
+For a full migration-grade backup/restore exercise, preserve roles separately as recommended by the Supabase CLI documentation. citeturn469739search0turn469739search2
 
 ## 9. PHASE 0 GATE
 
@@ -133,7 +143,7 @@ A database backup must not be claimed merely because the production project is h
 | Migration state | PASS |
 | Reviewed RLS boundary | PASS |
 | Recruitment direct-write bypass | FIXED |
-| Production deployment matches main | PASS |
+| Production app matches approved baseline | PASS |
 | Runtime health | PASS |
 | Known issues recorded | PASS |
 | Environment parity evidence | CONDITIONAL |
@@ -144,8 +154,8 @@ A database backup must not be claimed merely because the production project is h
 
 **PHASE 0 EXIT = NO-GO**
 
-The system baseline is technically reconciled for source control, production deployment, database identity, migration state, and the reviewed recruitment security boundary.
+The technical baseline is reconciled for source control, CI, production deployment, production database identity, migration state, and the reviewed public data boundaries.
 
-The phase remains frozen until production backup/restore evidence is captured. Environment parity should also be confirmed before the formal sign-off.
+The remaining hard gate is recoverability: this Free-plan production database needs an actual logical backup plus a successful restore test before the system can be declared ready to leave Phase 0.
 
-**No Phase 1 application implementation should be started from an unapproved production state.**
+**Do not begin Phase 1 implementation from an unapproved production baseline.**
