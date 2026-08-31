@@ -79,7 +79,7 @@ const matches = read('app/matches/page.tsx');
 assert(matches.includes("alternates: { canonical: '/matches' }"), 'Matches canonical route is missing');
 assert(!matches.includes("from '@/app/scrims/page'"), 'Matches page imports legacy scrims page');
 const matchDetail = read('app/matches/[match_id]/page.tsx');
-assert(matchDetail.includes("alternates: { canonical: `/matches/${scrim.id}` }"), 'Match detail canonical metadata is missing');
+assert(matchDetail.includes('alternates: { canonical: `/matches/${scrim.id}` }'), 'Match detail canonical metadata is missing');
 assert(matchDetail.includes('href="/matches"'), 'Match detail lacks return path');
 assert(matchDetail.includes('aria-label="Breadcrumb"'), 'Match detail breadcrumb is missing');
 const media = read('app/media/page.tsx');
@@ -91,7 +91,7 @@ assert(legacyAdminScrims.includes("redirect('/admin/matches')"), 'Legacy admin /
 const legacyAdminPreview = read('app/admin/preview/page.tsx');
 assert(legacyAdminPreview.includes("redirect('/admin/overview')"), 'Legacy admin /preview route does not redirect to /admin/overview');
 const legacyMember = read('app/member/[id]/page.tsx');
-assert(legacyMember.includes("redirect(`/roster/${encodeURIComponent(id)}`)"), 'Legacy /member/[id] route does not redirect to canonical roster detail');
+assert(legacyMember.includes('redirect(`/roster/${encodeURIComponent(id)}`)'), 'Legacy /member/[id] route does not redirect to canonical roster detail');
 
 const adminAuth = read('lib/admin-auth.ts');
 assert(adminAuth.includes("redirect('/login?error=not_authenticated&next=%2Fadmin')"), 'Unauthenticated admin users no longer route to login');
@@ -103,7 +103,7 @@ assert(read('app/error.tsx').includes('Try again'), 'Route error recovery action
 
 const member = read('app/roster/[member_id]/page.tsx');
 assert(member.includes('aria-label="Breadcrumb"'), 'Member detail breadcrumb is missing');
-assert(member.includes("alternates: { canonical: `/roster/${member.id}` }"), 'Member detail canonical metadata is missing');
+assert(member.includes('alternates: { canonical: `/roster/${member.id}` }'), 'Member detail canonical metadata is missing');
 assert(member.includes('href="/recruitment"'), 'Member detail lacks recruitment bridge');
 assert(member.includes('ShareMember'), 'Member detail lacks share action');
 const sitemap = read('app/sitemap.ts');
@@ -122,9 +122,10 @@ assert(adminDetail.includes('href="/admin/recruitment"'), 'Admin recruitment det
 
 const home = read('components/home-ux.tsx');
 assert(home.includes("from '@/components/member-card'"), 'Homepage does not use shared MemberCard');
-assert(home.includes('href="/matches"'), 'Homepage does not link to /matches');
 assert(home.includes('href="/media"'), 'Homepage does not link to /media');
 assert(home.includes('href="/recruitment"'), 'Homepage does not link to /recruitment');
+const matchCenter = read('components/match-center.tsx');
+assert(matchCenter.includes('href="/matches"'), 'Homepage Match Center does not expose a canonical /matches path');
 const roster = read('components/roster-content.tsx');
 assert(roster.includes("from '@/components/member-card'"), 'Roster does not use shared MemberCard');
 assert(roster.includes('ui-field'), 'Roster search does not use shared form control');
