@@ -1,0 +1,30 @@
+:root {
+  --background: var(--paper);
+  --surface: var(--panel);
+  --elevated: var(--panel-raised);
+  --border: var(--line);
+  --text-primary: var(--ink);
+  --text-muted: var(--muted);
+  --text-disabled: var(--muted);
+  --brand: var(--acid);
+  --brand-hover: var(--acid-hover);
+  --danger: var(--danger);
+  /* Phase 3 semantic aliases use already-locked palette values; no new colors are introduced. */
+  --success: var(--acid);
+  --warning: var(--ember);
+  --focus-ring: var(--acid);
+  --overlay: rgba(0, 0, 0, .80);
+
+  --state-default-bg: var(--surface);
+  --state-default-fg: var(--text-primary);
+  --state-hover-bg: var(--elevated);
+  --state-hover-fg: var(--text-primary);
+  --state-focus-bg: var(--surface);
+  --state-focus-fg: var(--text-primary);
+  --state-error-bg: var(--surface);
+  --state-error-fg: var(--danger);
+  --state-disabled-bg: var(--panel-deep);
+  --state-disabled-fg: var(--text-disabled);
+  --state-readonly-bg: var(--panel-deep);
+  --state-readonly-fg: var(--text-muted);
+}
