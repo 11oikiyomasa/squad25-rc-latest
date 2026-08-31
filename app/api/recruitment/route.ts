@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
+import { securityResponse } from '@/lib/security/error-response';
 import { verifyTurnstile } from '@/lib/recruitment-security';
 import { probeRecruitmentResume } from '@/lib/recruitment/file-probe';
 import { SCHEMA_APPLICATION_SUBMISSION_V1 } from '@/lib/recruitment/schema';
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   if (contentLengthHeader !== null) {
     const contentLength = Number(contentLengthHeader);
     if (!Number.isFinite(contentLength) || contentLength < 0 || contentLength > APP_MAX_MULTIPART_BODY) {
-      return recruitmentErrorResponse('APPLICATION_INVALID_REQUEST');
+      return securityResponse('PAYLOAD_TOO_LARGE');
     }
   }
 
