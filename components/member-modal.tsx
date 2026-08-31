@@ -26,10 +26,7 @@ export function MemberModal({ member, initialMontageIndex = 0, onClose }: { memb
   const [video, setVideo] = useState(initialPublicMontage(member, initialMontageIndex));
   const [playing, setPlaying] = useState(false);
   useEffect(() => {
-    if (member) {
-      setVideo(initialPublicMontage(member, initialMontageIndex));
-      setPlaying(false);
-    }
+    if (member) { setVideo(initialPublicMontage(member, initialMontageIndex)); setPlaying(false); }
   }, [member, initialMontageIndex]);
   useEffect(() => {
     if (!member) return;
@@ -40,75 +37,22 @@ export function MemberModal({ member, initialMontageIndex = 0, onClose }: { memb
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', handler); };
   }, [member, onClose]);
   if (!member) return null;
-
   const activeVideo = video;
   const publicCuts = publishedMontages(member);
 
   return (
     <div role="dialog" aria-modal="true" aria-label={`${member.nickname} player profile`} className="fixed inset-0 z-[70] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-6" onMouseDown={onClose}>
       <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#0c0e11] shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="flex h-14 shrink-0 items-center justify-end border-b border-white/8 bg-[#0c0e11]/95 px-3 backdrop-blur-md sm:hidden">
-          <button type="button" onClick={onClose} aria-label="Close player profile" className="grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-black text-white/90 shadow-lg transition hover:border-white/45 hover:bg-white hover:text-black">
-            <X size={21} />
-          </button>
-        </div>
-
+        <div className="flex h-14 shrink-0 items-center justify-end border-b border-white/8 bg-[#0c0e11]/95 px-3 backdrop-blur-md sm:hidden"><button type="button" onClick={onClose} aria-label="Close player profile" className="grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-black text-white/90 shadow-lg transition hover:border-white/45 hover:bg-white hover:text-black"><X size={21} /></button></div>
         <div className="relative min-h-0 overflow-y-auto overscroll-contain">
-          <button type="button" onClick={onClose} aria-label="Close player profile" className="absolute right-4 top-4 z-40 hidden h-11 w-11 place-items-center rounded-full border border-white/25 bg-black/90 text-white/90 shadow-lg backdrop-blur-md transition hover:border-white/45 hover:bg-white hover:text-black sm:grid">
-            <X size={21} />
-          </button>
-
+          <button type="button" onClick={onClose} aria-label="Close player profile" className="absolute right-4 top-4 z-40 hidden h-11 w-11 place-items-center rounded-full border border-white/25 bg-black/90 text-white/90 shadow-lg backdrop-blur-md transition hover:border-white/45 hover:bg-white hover:text-black sm:grid"><X size={21} /></button>
           <div className="grid lg:grid-cols-[.72fr_1.28fr]">
-            <div className="relative aspect-video w-full overflow-hidden bg-[#15181d] lg:aspect-auto lg:min-h-[680px]">
-              <Image src={member.photo} alt={`${member.nickname} profile`} fill sizes="(max-width: 1023px) 100vw, 42vw" className="object-cover" priority />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/35 to-transparent p-5 pt-24 sm:p-6 sm:pt-28">
-                <div className="mb-3 text-xs tracking-[.28em] text-white/55">PROFILE / {member.number}</div>
-                <div className="font-display text-5xl uppercase leading-none sm:text-6xl" style={{ color: member.accent }}>{member.nickname}</div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[.18em] text-white/65 sm:text-xs"><span>{member.role}</span><span>•</span><span>{member.hero}</span><span>•</span><span>{member.status}</span></div>
-              </div>
-            </div>
-
+            <div className="relative aspect-video w-full overflow-hidden bg-[#15181d] lg:aspect-auto lg:min-h-[680px]"><Image src={member.photo || '/images/members/ryuu.svg'} alt={`${member.nickname} profile`} fill sizes="(max-width: 1023px) 100vw, 42vw" className="object-cover" priority /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/35 to-transparent p-5 pt-24 sm:p-6 sm:pt-28"><div className="mb-3 text-xs tracking-[.28em] text-white/55">PROFILE / {member.number}</div><div className="font-display text-5xl uppercase leading-none sm:text-6xl" style={{ color: member.accent }}>{member.nickname}</div><div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[.18em] text-white/65 sm:text-xs"><span>{member.role}</span><span>•</span><span>{member.hero}</span><span>•</span><span>{member.status}</span></div></div></div>
             <div className="p-5 sm:p-8">
-              <div className="flex items-start justify-between gap-4 pr-1">
-                <div className="min-w-0"><div className="truncate text-xs uppercase tracking-[.24em] text-white/45">{member.name}</div><h3 className="mt-2 text-2xl font-semibold">The tape</h3></div>
-                <Link href={`/member/${member.id}`} className="shrink-0 border border-white/10 px-3 py-2 text-[9px] font-semibold uppercase tracking-[.16em] text-white/45 hover:border-white/25 hover:text-white">Open profile</Link>
-              </div>
-
+              <div className="flex items-start justify-between gap-4 pr-1"><div className="min-w-0"><div className="truncate text-xs uppercase tracking-[.24em] text-white/45">{member.name}</div><h3 className="mt-2 text-2xl font-semibold">The tape</h3></div><Link href={`/roster/${member.id}`} className="shrink-0 border border-white/10 px-3 py-2 text-[9px] font-semibold uppercase tracking-[.16em] text-white/45 hover:border-white/25 hover:text-white">Open profile</Link></div>
               <p className="mt-5 max-w-xl text-sm leading-7 text-white/60">{member.bio}</p>
-
-              <div className="mt-7 overflow-hidden border border-white/10 bg-black">
-                <div className="aspect-video w-full bg-[#090a0c]">
-                  {activeVideo ? (
-                    playing ? (
-                      <iframe className="h-full w-full" src={`https://www.youtube.com/embed/${normalizeYoutubeId(activeVideo.youtubeId)}?rel=0`} title={activeVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-                    ) : (
-                      <button type="button" onClick={() => setPlaying(true)} className="group relative block h-full w-full text-left">
-                        <Image src={youtubeThumbnail(activeVideo.youtubeId)} alt="" fill sizes="(max-width: 639px) 100vw, 800px" className="object-cover opacity-70 transition group-hover:opacity-85" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/25" />
-                        <div className="absolute inset-0 grid place-items-center"><span className="grid h-16 w-16 place-items-center rounded-full bg-[#d7ff43] text-black shadow-[0_0_0_14px_rgba(215,255,67,.08)] transition group-hover:scale-105"><Play size={20} /></span></div>
-                        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4"><span className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/70">Play cut</span><span className="font-mono text-[10px] uppercase tracking-[.16em] text-white/45">{activeVideo.duration}</span></div>
-                      </button>
-                    )
-                  ) : (
-                    <div className="grid h-full place-items-center p-8 text-center">
-                      <div><div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-white/10 text-[#d7ff43]"><Play size={18} /></div><div className="text-sm font-semibold">No tape yet.</div><div className="mt-2 max-w-sm text-xs leading-5 text-white/35">This player’s archive is still being assembled.</div></div>
-                    </div>
-                  )}
-                </div>
-                {activeVideo && <div className="border-t border-white/10 p-4"><div className="text-sm font-semibold">{activeVideo.title}</div><div className="mt-1 text-xs text-white/45">{activeVideo.hero} · {activeVideo.duration}</div></div>}
-              </div>
-
-              {publicCuts.length > 0 && (
-                <div className="mt-7 space-y-2">
-                  <div className="mb-3 text-[11px] uppercase tracking-[.22em] text-white/35">Cuts</div>
-                  {publicCuts.map((m, idx) => (
-                    <button type="button" key={m.title} onClick={() => { setVideo(m); setPlaying(false); }} className={`flex w-full items-center gap-4 border p-3 text-left transition ${activeVideo?.title === m.title ? 'border-white/20 bg-white/[.06]' : 'border-white/8 bg-white/[.02] hover:bg-white/[.045]'}`}>
-                      <div className="relative h-10 w-14 shrink-0 overflow-hidden border border-white/10 bg-black">{youtubeThumbnail(m.youtubeId) ? <Image src={youtubeThumbnail(m.youtubeId)} alt="" fill sizes="56px" className="object-cover" /> : <div className="grid h-full w-full place-items-center"><Play size={15} /></div>}</div>
-                      <div className="min-w-0 flex-1"><div className="truncate text-sm">{m.title}</div><div className="mt-1 text-xs text-white/40">{idx + 1} / {m.hero} / {m.duration}</div></div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="mt-7 overflow-hidden border border-white/10 bg-black"><div className="aspect-video w-full bg-[#090a0c]">{activeVideo ? (playing ? <iframe className="h-full w-full" loading="lazy" src={`https://www.youtube-nocookie.com/embed/${normalizeYoutubeId(activeVideo.youtubeId)}?rel=0`} title={activeVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /> : <button type="button" onClick={() => setPlaying(true)} className="group relative block h-full w-full text-left"><Image src={youtubeThumbnail(activeVideo.youtubeId)} alt="" fill sizes="(max-width: 639px) 100vw, 800px" className="object-cover opacity-70 transition group-hover:opacity-85" /><div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/25" /><div className="absolute inset-0 grid place-items-center"><span className="grid h-16 w-16 place-items-center rounded-full bg-[#d7ff43] text-black shadow-[0_0_0_14px_rgba(215,255,67,.08)] transition group-hover:scale-105"><Play size={20} /></span></div><div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4"><span className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/70">Play cut</span><span className="font-mono text-[10px] uppercase tracking-[.16em] text-white/45">{activeVideo.duration}</span></div></button>) : <div className="grid h-full place-items-center p-8 text-center"><div><div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-white/10 text-[#d7ff43]"><Play size={18} /></div><div className="text-sm font-semibold">No tape yet.</div><div className="mt-2 max-w-sm text-xs leading-5 text-white/35">This player’s archive is still being assembled.</div></div></div>}</div>{activeVideo && <div className="border-t border-white/10 p-4"><div className="text-sm font-semibold">{activeVideo.title}</div><div className="mt-1 text-xs text-white/45">{activeVideo.hero} · {activeVideo.duration}</div></div>}</div>
+              {publicCuts.length > 0 && <div className="mt-7 space-y-2"><div className="mb-3 text-[11px] uppercase tracking-[.22em] text-white/35">Cuts</div>{publicCuts.map((m, idx) => <button type="button" key={m.title} onClick={() => { setVideo(m); setPlaying(false); }} className={`flex w-full items-center gap-4 border p-3 text-left transition ${activeVideo?.title === m.title ? 'border-white/20 bg-white/[.06]' : 'border-white/8 bg-white/[.02] hover:bg-white/[.045]'}`}><div className="relative h-10 w-14 shrink-0 overflow-hidden border border-white/10 bg-black"><Image src={youtubeThumbnail(m.youtubeId)} alt="" fill sizes="56px" className="object-cover" /></div><div className="min-w-0 flex-1"><div className="truncate text-sm">{m.title}</div><div className="mt-1 text-xs text-white/40">{idx + 1} / {m.hero} / {m.duration}</div></div></button>)}</div>}
             </div>
           </div>
         </div>
