@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ArrowUpRight } from '@/components/icons';
 import type { ContentSnapshot } from '@/lib/content';
 
 type ContentState = ContentSnapshot;
 
-const DRAFT_KEY = 'squad25-media-draft-v1';
-const PUBLISHED_KEY = 'squad25-media-published-v1';
+const DRAFT_KEY = 'squad25-content-v1';
+const PUBLISHED_KEY = 'squad25-published-v1';
 
 function isContentState(value: unknown): value is ContentState {
   if (!value || typeof value !== 'object') return false;
@@ -38,12 +39,14 @@ export default function AdminMediaStudio() {
     setPublished(pub);
     if (isContentState(draft)) setData(draft);
 
+    let cancelled = false;
     fetch('/api/admin/content', { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error('Unable to load cloud content.');
         return response.json();
       })
       .then((remote: unknown) => {
+        if (cancelled) return;
         if (!isContentState(remote)) throw new Error('Cloud content payload is invalid.');
         const currentDraft = readJson(DRAFT_KEY);
         const currentPublished = localStorage.getItem(PUBLISHED_KEY) ?? '';
@@ -51,7 +54,7 @@ export default function AdminMediaStudio() {
         if (draftSerialized && draftSerialized !== currentPublished) {
           setData(currentDraft);
           setPublished(currentPublished);
-          setMessage('Unsaved media draft preserved.');
+          setMessage('Unsaved draft preserved.');
           return;
         }
         const serialized = JSON.stringify(remote);
@@ -60,8 +63,12 @@ export default function AdminMediaStudio() {
         localStorage.setItem(DRAFT_KEY, serialized);
         localStorage.setItem(PUBLISHED_KEY, serialized);
       })
-      .catch((error) => setMessage(error instanceof Error ? error.message : 'Unable to load media.'))
-      .finally(() => setReady(true));
+      .catch((error) => {
+        if (!cancelled) setMessage(error instanceof Error ? error.message : 'Unable to load media.');
+      })
+      .finally(() => { if (!cancelled) setReady(true); });
+
+    return () => { cancelled = true; };
   }, []);
 
   const dirty = useMemo(() => Boolean(data && JSON.stringify(data) !== published), [data, published]);
@@ -150,7 +157,7 @@ export default function AdminMediaStudio() {
 
           <section className="border border-white/8 bg-[#101216] p-5 sm:p-6"><div className="flex items-end justify-between gap-4 border-b border-white/8 pb-4"><div><div className="text-[9px] uppercase tracking-[.2em] text-[#d7ff43]">Achievements</div><h2 className="mt-1 text-xl font-semibold">{data.achievements.length} records</h2></div><button type="button" onClick={addAchievement} className="border border-white/10 px-3 py-2 text-[9px] font-black uppercase tracking-[.16em] text-white/55 hover:border-white/25 hover:text-white">+ Add</button></div><div className="mt-5 space-y-4">{data.achievements.map((achievement, index) => <article key={`${achievement.year}-${achievement.title}-${index}`} className="border border-white/8 p-4"><div className="grid gap-3 sm:grid-cols-[100px_1fr]"><Field label="Year" value={achievement.year} onChange={(value) => updateAchievement(index, { year: value })}/><Field label="Title" value={achievement.title} onChange={(value) => updateAchievement(index, { title: value })}/><div className="sm:col-span-2"><label className="block"><span className="text-[9px] uppercase tracking-[.18em] text-white/25">Note</span><textarea value={achievement.note} onChange={(event) => updateAchievement(index, { note: event.target.value })} className="mt-2 min-h-24 w-full border border-white/10 bg-[#0d0f11] p-3 text-xs leading-6 text-white outline-none focus:border-[#d7ff43]/35"/></label></div></div><button type="button" onClick={() => removeAchievement(index)} className="mt-3 text-[9px] uppercase tracking-[.16em] text-[#ff6b38]">Remove record</button></article>)}</div></section>
         </div>
-        <div className="mt-6 flex justify-end"><a href="/admin/preview" className="inline-flex items-center gap-2 border border-white/10 px-4 py-3 text-[9px] uppercase tracking-[.16em] text-white/55 hover:border-white/25 hover:text-white">Open draft preview <ArrowUpRight size={13}/></a></div>
+        <div className="mt-6 flex justify-end"><Link href="/admin/preview" className="inline-flex items-center gap-2 border border-white/10 px-4 py-3 text-[9px] uppercase tracking-[.16em] text-white/55 hover:border-white/25 hover:text-white">Open draft preview <ArrowUpRight size={13}/></Link></div>
       </section>
     </main>
   );
