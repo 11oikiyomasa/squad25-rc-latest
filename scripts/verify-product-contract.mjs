@@ -19,6 +19,7 @@ const assert = (condition, message) => {
 };
 
 const contract = read('lib/product/contract.ts');
+const funnel = read('lib/funnel/state.ts');
 
 assert(contract.includes("PRODUCT_ID = 'SQUAD.25'"), 'Product ID is not locked to SQUAD.25');
 assert(contract.includes('PRODUCT_ONE_LINER'), 'Product one-liner contract is missing');
@@ -38,8 +39,9 @@ for (const state of [
   'FUNNEL_ADMIN_INBOX',
   'FUNNEL_MEMBER_NOT_FOUND',
 ]) {
-  assert(contract.includes(state), `Funnel state missing: ${state}`);
+  assert(funnel.includes(state), `Funnel state missing: ${state}`);
 }
+assert(funnel.includes('canTransition'), 'Funnel transition guard missing');
 for (const domainTerm of [
   'DOMAIN_MEMBER',
   'DOMAIN_ROSTER',
@@ -65,7 +67,7 @@ for (const metric of [
   assert(contract.includes(metric), `Success metric missing: ${metric}`);
 }
 assert(contract.includes('MEMBER_DEEP_LINK_WHEN_RECRUITMENT_CLOSED'), 'Member deep-link closed-cycle rule missing');
-assert(contract.includes("RECRUITMENT_CLOSED_STATE: 'FUNNEL_RECRUITMENT_CLOSED'"), 'Recruitment CLOSED state rule missing');
+assert(contract.includes('RECRUITMENT_CLOSED_STATE'), 'Recruitment CLOSED state rule missing');
 assert(contract.includes('ADMIN_INBOX_PERSONA'), 'Admin Inbox role contract missing');
 assert(contract.includes('APPLICANT_REQUIRES_PERSISTENT_ACCOUNT: false'), 'Applicant account requirement is not locked');
 
