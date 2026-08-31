@@ -164,8 +164,11 @@ export async function PUT(request: Request) {
     },
   });
   if (publishError) {
-    const status = publishError.code === '42501' ? 403 : publishError.code === '22023' ? 422 : publishError.code === '23503' ? 409 : 500;
-    return NextResponse.json({ error: publishError.message }, { status });
+    if (publishError.code === '42501' && publishError.message === 'Admin access required.') {
+      return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+    }
+    console.error('Admin publish RPC failed:', publishError);
+    return NextResponse.json({ error: 'Publish failed. The server could not save the content.' }, { status: 500 });
   }
 
   const response = await getSquadContent();
