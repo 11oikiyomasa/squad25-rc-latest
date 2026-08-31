@@ -19,7 +19,6 @@ alter table public.members
   alter column publish_state set default 'UNPUBLISHED',
   alter column publish_state set not null;
 
-drop constraint if exists members_status_check on public.members;
 alter table public.members
   drop constraint if exists members_status_check;
 alter table public.members
