@@ -39,7 +39,7 @@ export async function updateSession(request: NextRequest) {
   // the request body. Step 5 owns Zod, file probing, anti-abuse, and persistence.
   if (isRecruitmentPost(request)) {
     const rateLimit = await checkRecruitmentRateLimit(request);
-    if ('unavailable' in rateLimit && rateLimit.unavailable) return securityResponse('RATE_LIMIT_UNAVAILABLE');
+    if (!rateLimit.allowed && rateLimit.unavailable) return securityResponse('RATE_LIMIT_UNAVAILABLE');
 
     if (!rateLimit.allowed) {
       const response = securityResponse('RATE_LIMITED');
