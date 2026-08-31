@@ -1,0 +1,40 @@
+name: Database Types
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-types-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+
+      - name: Initialize local Supabase config
+        run: supabase init --force
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Generate database types
+        run: supabase gen types typescript --local --schema public > /tmp/database.ts
+
+      - name: Fail on generated type drift
+        run: diff -u types/database.ts /tmp/database.ts
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop
