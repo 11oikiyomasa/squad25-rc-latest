@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createHash } from 'node:crypto';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 import { verifyTurnstile, text } from '@/lib/recruitment-security';
 import { probeRecruitmentResume } from '@/lib/recruitment/file-probe';
@@ -33,10 +32,7 @@ function readSubmission(form: FormData) {
 }
 
 function fieldValidationFailed() {
-  return NextResponse.json(
-    { error: 'Invalid application submission.' },
-    { status: 400, headers: { 'Cache-Control': 'no-store' } },
-  );
+  return recruitmentErrorResponse('APPLICATION_INVALID_REQUEST');
 }
 
 async function persist(input: Parameters<typeof persistApplicationSubmission>[0], request: Request) {
@@ -51,8 +47,8 @@ async function persist(input: Parameters<typeof persistApplicationSubmission>[0]
 }
 
 export async function POST(request: Request) {
-  // Steps 4 and 5 are intentionally split across proxy + Route Handler.
-  // The proxy has already enforced rate-limit, public audience, Origin, and host/body perimeter.
+  // Step 4 runs first in proxy.ts: rate limit -> public audience -> Origin -> host body ceiling.
+  // Step 5 begins here with the application multipart ceiling, Zod, file probe, anti-abuse, and write.
   if (!isSupabaseConfigured()) return recruitmentErrorResponse('APPLICATION_PERSISTENCE_FAILED');
 
   const contentLengthHeader = request.headers.get('content-length');
@@ -69,8 +65,7 @@ export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
   if (!form) return invalidRequest();
 
-  const candidate = readSubmission(form);
-  const parsed = SCHEMA_APPLICATION_SUBMISSION_V1.safeParse(candidate);
+  const parsed = SCHEMA_APPLICATION_SUBMISSION_V1.safeParse(readSubmission(form));
   if (!parsed.success) return fieldValidationFailed();
 
   const probe = await probeRecruitmentResume(parsed.data.resume);
@@ -82,21 +77,17 @@ export async function POST(request: Request) {
 
   const writeResult = await persist(parsed.data, request);
   if ('error' in writeResult) {
-    if (writeResult.error.code === 'APPLICATION_CLOSED') {
-      return recruitmentErrorResponse('APPLICATION_CLOSED');
+    switch (writeResult.error.code) {
+      case 'APPLICATION_CLOSED':
+        return recruitmentErrorResponse('APPLICATION_CLOSED');
+      case 'APPLICATION_DUPLICATE':
+        return recruitmentErrorResponse('APPLICATION_DUPLICATE');
+      case 'APPLICATION_UPLOAD_FAILED':
+        return recruitmentErrorResponse('APPLICATION_UPLOAD_FAILED');
+      default:
+        return recruitmentErrorResponse('APPLICATION_PERSISTENCE_FAILED');
     }
-    if (writeResult.error.code === 'APPLICATION_DUPLICATE') {
-      return recruitmentErrorResponse('APPLICATION_DUPLICATE');
-    }
-    if (writeResult.error.code === 'APPLICATION_UPLOAD_FAILED') {
-      return recruitmentErrorResponse('APPLICATION_UPLOAD_FAILED');
-    }
-    return recruitmentErrorResponse('APPLICATION_PERSISTENCE_FAILED');
   }
-
-  // Keep the request-local hash computation available for future audit/metadata work.
-  // No second Application write is performed here.
-  void createHash('sha256').update(Buffer.from(await parsed.data.resume.arrayBuffer())).digest('hex');
 
   return NextResponse.json(
     { ok: true, applicationId: writeResult.applicationId },
