@@ -1,5 +1,7 @@
 name: CI
 
+# Runs on the current source tree so dependency/type/build regressions are visible.
+
 on:
   push:
   pull_request:
