@@ -24,6 +24,7 @@ export type Database = {
           placement: string | null
           sort_order: number
           title: string
+          updated_at: string
           year: number | null
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           placement?: string | null
           sort_order?: number
           title: string
+          updated_at?: string
           year?: number | null
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           placement?: string | null
           sort_order?: number
           title?: string
+          updated_at?: string
           year?: number | null
         }
         Relationships: []
@@ -110,24 +113,30 @@ export type Database = {
           created_at: string
           id: string
           image_url: string
+          publish_state: string
           sort_order: number
           title: string
+          updated_at: string
         }
         Insert: {
           caption?: string
           created_at?: string
           id?: string
           image_url: string
+          publish_state?: string
           sort_order?: number
           title: string
+          updated_at?: string
         }
         Update: {
           caption?: string
           created_at?: string
           id?: string
           image_url?: string
+          publish_state?: string
           sort_order?: number
           title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -136,12 +145,13 @@ export type Database = {
           accent: string
           bio: string
           created_at: string
-          full_name: string | null
+          full_name: string
           id: string
           main_hero: string | null
           nickname: string
           number: string
           photo_url: string | null
+          publish_state: string
           role: string
           slug: string
           sort_order: number
@@ -152,12 +162,13 @@ export type Database = {
           accent?: string
           bio?: string
           created_at?: string
-          full_name?: string | null
+          full_name: string
           id?: string
           main_hero?: string | null
           nickname: string
           number?: string
           photo_url?: string | null
+          publish_state?: string
           role: string
           slug: string
           sort_order?: number
@@ -168,12 +179,13 @@ export type Database = {
           accent?: string
           bio?: string
           created_at?: string
-          full_name?: string | null
+          full_name?: string
           id?: string
           main_hero?: string | null
           nickname?: string
           number?: string
           photo_url?: string | null
+          publish_state?: string
           role?: string
           slug?: string
           sort_order?: number
@@ -191,9 +203,11 @@ export type Database = {
           hero: string | null
           id: string
           member_id: string
+          publish_state: string
           published_at: string | null
           sort_order: number
           title: string
+          updated_at: string
           youtube_id: string
         }
         Insert: {
@@ -204,9 +218,11 @@ export type Database = {
           hero?: string | null
           id?: string
           member_id: string
+          publish_state?: string
           published_at?: string | null
           sort_order?: number
           title: string
+          updated_at?: string
           youtube_id: string
         }
         Update: {
@@ -217,9 +233,11 @@ export type Database = {
           hero?: string | null
           id?: string
           member_id?: string
+          publish_state?: string
           published_at?: string | null
           sort_order?: number
           title?: string
+          updated_at?: string
           youtube_id?: string
         }
         Relationships: [
@@ -271,7 +289,7 @@ export type Database = {
         Row: {
           admin_note: string
           availability: string
-          captcha_verified_at: string | null
+          captcha_verified_at: string
           contact: string
           cover_letter: string
           created_at: string
@@ -280,16 +298,16 @@ export type Database = {
           full_name: string
           hero_pool: string
           id: string
-          job_id: string | null
+          job_id: string
           message: string
           nickname: string
-          phone: string | null
+          phone: string
           portfolio_link: string
           rank: string
-          resume_original_name: string | null
-          resume_path: string | null
+          resume_original_name: string
+          resume_path: string
           resume_sha256: string | null
-          resume_size: number | null
+          resume_size: number
           reviewed_at: string | null
           role: string
           social_url: string
@@ -300,7 +318,7 @@ export type Database = {
         Insert: {
           admin_note?: string
           availability?: string
-          captcha_verified_at?: string | null
+          captcha_verified_at: string
           contact: string
           cover_letter?: string
           created_at?: string
@@ -309,16 +327,16 @@ export type Database = {
           full_name: string
           hero_pool?: string
           id?: string
-          job_id?: string | null
+          job_id: string
           message?: string
           nickname: string
-          phone?: string | null
+          phone: string
           portfolio_link?: string
           rank?: string
-          resume_original_name?: string | null
-          resume_path?: string | null
+          resume_original_name: string
+          resume_path: string
           resume_sha256?: string | null
-          resume_size?: number | null
+          resume_size: number
           reviewed_at?: string | null
           role: string
           social_url?: string
@@ -329,7 +347,7 @@ export type Database = {
         Update: {
           admin_note?: string
           availability?: string
-          captcha_verified_at?: string | null
+          captcha_verified_at?: string
           contact?: string
           cover_letter?: string
           created_at?: string
@@ -338,16 +356,16 @@ export type Database = {
           full_name?: string
           hero_pool?: string
           id?: string
-          job_id?: string | null
+          job_id?: string
           message?: string
           nickname?: string
-          phone?: string | null
+          phone?: string
           portfolio_link?: string
           rank?: string
-          resume_original_name?: string | null
-          resume_path?: string | null
+          resume_original_name?: string
+          resume_path?: string
           resume_sha256?: string | null
-          resume_size?: number | null
+          resume_size?: number
           reviewed_at?: string | null
           role?: string
           social_url?: string
@@ -365,10 +383,41 @@ export type Database = {
           },
         ]
       }
+      recruitment_cycles: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          id: string
+          name: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recruitment_jobs: {
         Row: {
           closes_at: string | null
           created_at: string
+          cycle_id: string
           description: string
           id: string
           is_active: boolean
@@ -380,6 +429,7 @@ export type Database = {
         Insert: {
           closes_at?: string | null
           created_at?: string
+          cycle_id: string
           description?: string
           id?: string
           is_active?: boolean
@@ -391,6 +441,7 @@ export type Database = {
         Update: {
           closes_at?: string | null
           created_at?: string
+          cycle_id?: string
           description?: string
           id?: string
           is_active?: boolean
@@ -399,7 +450,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_jobs_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scrims: {
         Row: {
@@ -628,7 +687,9 @@ export type Enums<
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    ? DatabaseWithoutInternals extends never
+      ? never
+      : DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
@@ -645,7 +706,9 @@ export type CompositeTypes<
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    ? DatabaseWithoutInternals extends never
+      ? never
+      : DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
