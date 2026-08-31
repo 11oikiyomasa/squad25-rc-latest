@@ -45,3 +45,11 @@ test('regression: roster and overview use the hardened single content studio imp
   assert.match(overview, /AdminStudioV2/);
   assert.match(roster, /AdminStudioV2/);
 });
+
+test('regression: recruitment inbox ignores stale list/detail responses', () => {
+  const source = read('components/recruitment-inbox.tsx');
+  assert.match(source, /const requestVersion = useRef\(0\)/);
+  assert.match(source, /const detailVersion = useRef\(0\)/);
+  assert.match(source, /version !== requestVersion\.current/);
+  assert.match(source, /currentDetail !== detailVersion\.current/);
+});
