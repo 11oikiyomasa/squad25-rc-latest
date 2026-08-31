@@ -27,6 +27,8 @@ jobs:
         run: npm ci
       - name: Unit tests
         run: npm run test:unit
+      - name: Regression tests
+        run: npm run test:regression
       - name: Verify source and agent contract
         run: npm run verify
       - name: Validate AI reviewer runner
