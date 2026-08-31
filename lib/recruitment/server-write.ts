@@ -2,6 +2,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { clientIp } from '@/lib/recruitment-security';
 import { RECRUITMENT_RESUME_BUCKET } from '@/lib/recruitment/file-probe';
 import type { ApplicationSubmissionV1 } from '@/lib/recruitment/schema';
 
@@ -28,6 +29,7 @@ function mapRpcError(message: string): ApplicationWriteErrorCode {
 
 export async function persistApplicationSubmission(
   input: ApplicationSubmissionV1,
+  request: Request,
 ): Promise<{ applicationId: string }> {
   const objectPath = `applications/${randomUUID()}.pdf`;
   const bytes = Buffer.from(await input.resume.arrayBuffer());
@@ -60,7 +62,7 @@ export async function persistApplicationSubmission(
         resumeSize: input.resume.size,
         resumeOriginalName: input.resume.name.slice(0, 255),
       },
-      client_ip: '0.0.0.0',
+      client_ip: clientIp(request),
     },
   );
 
