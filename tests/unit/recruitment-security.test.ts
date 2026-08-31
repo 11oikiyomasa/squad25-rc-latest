@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertPdf, clientIp, hasPdfMagicBytes, isValidEmail, isValidHttpUrl, text } from '../../lib/recruitment-security.ts';
+import { assertPdf, clientIp, hasPdfMagicBytes, isValidEmail, isValidHttpUrl, text } from '../../lib/recruitment-security';
 
 test('validation accepts a normal email and rejects oversized/invalid email', () => {
   assert.equal(isValidEmail('player@example.com'), true);
