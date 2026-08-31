@@ -29,6 +29,11 @@ Rule: every bug discovered in production/review becomes a permanent automated co
 | Auth helper behavior can regress independently of framework redirects | Phase 12 extraction | `tests/unit/auth-helpers.test.ts` | Unit |
 | PDF spoofing / invalid resume types | recruitment security fixes | MIME, extension, size and `%PDF-` magic-byte tests | Unit |
 | Unicode/input normalization drift | recruitment security fixes | `text()` regression tests for NFKC, trim and bounds | Unit |
+| Admin preview button pointed at a redirect-only legacy page | deep admin audit | `tests/regression/admin-surface.test.ts` + functional draft preview route | Regression + E2E |
+| Admin pages repeated auth checks and had inconsistent navigation | deep admin audit | Shared `app/admin/layout.tsx` contract; section pages no longer own duplicate `requireAdmin` checks | Regression |
+| Supabase misconfiguration could still render the admin studio | deep admin auth audit | `requireAdmin` must redirect to the login/configuration state before rendering any admin page | Regression |
+| Admin publish silently dropped achievements and gallery changes | deep admin CMS audit | Admin API + publish RPC contract requires achievements/gallery and persists them atomically | Regression + Integration |
+| `/admin/media` exposed the roster studio instead of media management | deep admin CMS audit | `AdminMediaStudio` contract tests gallery/achievement editing and full-snapshot publishing | Regression + E2E |
 
 ## Missing live-fixture activation
 
