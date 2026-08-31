@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:types": "node scripts/generate-database-types.mjs",
-    "verify": "node scripts/verify.mjs && node scripts/verify-phase1.mjs && node scripts/verify-recruitment.mjs && node scripts/verify-scrims.mjs && node scripts/verify-media.mjs && node scripts/verify-agent-contract.mjs"
+    "verify": "node scripts/verify-product-contract.mjs && node scripts/verify.mjs && node scripts/verify-phase1.mjs && node scripts/verify-recruitment.mjs && node scripts/verify-scrims.mjs && node scripts/verify-media.mjs && node scripts/verify-agent-contract.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.5",
