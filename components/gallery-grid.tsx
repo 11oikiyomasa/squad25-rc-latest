@@ -8,12 +8,14 @@ import { X } from '@/components/icons';
 export function GalleryGrid({ items }: { items: GalleryItem[] }) {
   const [active, setActive] = useState<GalleryItem | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!active) return;
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setActive(null); };
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
+    closeRef.current?.focus();
     return () => {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', onKey);
@@ -27,7 +29,6 @@ export function GalleryGrid({ items }: { items: GalleryItem[] }) {
         {items.map((item, index) => (
           <button
             key={item.id}
-            ref={(node) => { if (active?.id !== item.id && node) triggerRef.current = node; }}
             type="button"
             onClick={() => { triggerRef.current = document.activeElement as HTMLButtonElement; setActive(item); }}
             aria-label={`Open ${item.title}`}
@@ -43,7 +44,7 @@ export function GalleryGrid({ items }: { items: GalleryItem[] }) {
       {active && (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/90 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={active.title} onMouseDown={() => setActive(null)}>
           <div className="relative w-full max-w-6xl" onMouseDown={(event) => event.stopPropagation()}>
-            <button type="button" onClick={() => setActive(null)} aria-label="Close image" className="absolute right-2 top-2 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/50 text-white/70 hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"><X size={18}/></button>
+            <button ref={closeRef} type="button" onClick={() => setActive(null)} aria-label="Close image" className="absolute right-2 top-2 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/50 text-white/70 hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"><X size={18}/></button>
             <div className="relative aspect-[16/10] overflow-hidden border border-white/10 bg-[#101216]">
               <Image src={active.image} alt={active.title} fill sizes="(max-width: 1023px) 100vw, 1100px" className="object-contain" />
             </div>
