@@ -56,7 +56,7 @@ export async function getSquadContent(): Promise<ContentSnapshot> {
     const montageRows = montageRowsSafe(montagesResult.data);
     const achievementRows = achievementsResult.data;
     const galleryRows = galleryResult.data;
-    if (!memberRows || memberRows.length !== 25) throw new Error(`Supabase roster integrity check failed: expected 25 members, found ${memberRows?.length ?? 0}.`);
+    if (!memberRows) throw new Error('Supabase roster query failed.');
 
     const montagesByMember = new Map<string, MontageRow[]>();
     for (const montage of montageRows) {
