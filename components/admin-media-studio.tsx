@@ -34,10 +34,11 @@ export default function AdminMediaStudio() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const draft = readJson(DRAFT_KEY);
+    const draftValue = readJson(DRAFT_KEY);
     const pub = localStorage.getItem(PUBLISHED_KEY) ?? '';
+    const draft = isContentState(draftValue) ? draftValue : null;
     setPublished(pub);
-    if (isContentState(draft)) setData(draft);
+    if (draft) setData(draft);
 
     let cancelled = false;
     fetch('/api/admin/content', { cache: 'no-store' })
@@ -48,9 +49,10 @@ export default function AdminMediaStudio() {
       .then((remote: unknown) => {
         if (cancelled) return;
         if (!isContentState(remote)) throw new Error('Cloud content payload is invalid.');
-        const currentDraft = readJson(DRAFT_KEY);
+        const currentDraftValue = readJson(DRAFT_KEY);
         const currentPublished = localStorage.getItem(PUBLISHED_KEY) ?? '';
-        const draftSerialized = isContentState(currentDraft) ? JSON.stringify(currentDraft) : '';
+        const currentDraft = isContentState(currentDraftValue) ? currentDraftValue : null;
+        const draftSerialized = currentDraft ? JSON.stringify(currentDraft) : '';
         if (draftSerialized && draftSerialized !== currentPublished) {
           setData(currentDraft);
           setPublished(currentPublished);
