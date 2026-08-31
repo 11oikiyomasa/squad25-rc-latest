@@ -128,6 +128,19 @@ test.describe('admin flows', () => {
     await expect(page.getByText('Automated application fixture.', { exact: true })).toBeVisible();
   });
 
+  test('Admin can open media editor and draft preview', async ({ page }) => {
+    test.skip(!hasAdminCredentials, 'Admin credentials are not configured for this environment.');
+    await loginAsAdmin(page);
+    await page.goto('/admin/media');
+    await expect(page.getByText('Archive room.', { exact: false })).toBeVisible();
+    await expect(page.getByText(/Gallery archive/i)).toBeVisible();
+    await expect(page.getByText(/Achievements/i)).toBeVisible();
+    await page.goto('/admin/preview?member=ryuu');
+    await expect(page.getByText(/Draft preview/i)).toBeVisible();
+    await expect(page.getByText(/unpublished/i)).toBeVisible();
+    await expect(page.getByRole('link', { name: /Back to editor/i })).toBeVisible();
+  });
+
   test('Admin updates content', async ({ page }) => {
     test.skip(!hasAdminCredentials, 'Admin credentials are not configured for this environment.');
     await loginAsAdmin(page);
@@ -143,12 +156,14 @@ test.describe('admin flows', () => {
     await page.route('**/api/admin/content', async (route) => {
       if (route.request().method() !== 'PUT') return route.continue();
       const body = route.request().postDataJSON();
-      expect(body.members).toBeTruthy();
+      expect(Array.isArray(body.members)).toBe(true);
+      expect(Array.isArray(body.achievements)).toBe(true);
+      expect(Array.isArray(body.gallery)).toBe(true);
       const responseBody = {
         profile: body.profile ?? { name: 'No Flaws', tagline: '', season: '2026', instagram: '#', tiktok: '#', youtube: '#' },
         members: body.members,
-        achievements: [],
-        gallery: [],
+        achievements: body.achievements,
+        gallery: body.gallery,
       };
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(responseBody) });
     });
