@@ -71,21 +71,22 @@ export default function RecruitmentForm({ jobId, jobTitle }: Props) {
     }
   }
 
-  const field = 'mt-2 w-full border border-[var(--border)] bg-[var(--state-default-bg)] px-3 py-3 text-sm text-[var(--state-default-fg)] outline-none transition-colors duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--focus-ring)] disabled:cursor-not-allowed disabled:bg-[var(--state-disabled-bg)] disabled:text-[var(--state-disabled-fg)] disabled:opacity-100';
   const label = 'block text-[9px] uppercase tracking-[.18em] text-[var(--text-muted)]';
 
   return (
     <form onSubmit={submit} encType="multipart/form-data" className="space-y-6" aria-describedby={error ? 'recruitment-form-error' : undefined}>
       <input type="hidden" name="jobTitle" value={jobTitle} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <label htmlFor="application-full-name"><span className={label}>Full name <span aria-hidden="true">*</span></span><input id="application-full-name" required aria-required="true" name="fullName" minLength={2} maxLength={80} className={field} autoComplete="name" /></label>
-        <label htmlFor="application-nickname"><span className={label}>Nickname <span aria-hidden="true">*</span></span><input id="application-nickname" required aria-required="true" name="nickname" maxLength={30} className={field} autoComplete="nickname" /></label>
-        <label htmlFor="application-email"><span className={label}>Email <span aria-hidden="true">*</span></span><input id="application-email" required aria-required="true" name="email" type="email" maxLength={254} className={field} autoComplete="email" /></label>
-        <label htmlFor="application-phone"><span className={label}>Phone <span aria-hidden="true">*</span></span><input id="application-phone" required aria-required="true" name="phone" maxLength={40} className={field} autoComplete="tel" /></label>
-        <label htmlFor="application-role"><span className={label}>Preferred role <span aria-hidden="true">*</span></span><select id="application-role" required aria-required="true" name="role" defaultValue="FLEX" className={field}>{roles.map((role) => <option key={role}>{role}</option>)}</select></label>
-        <label htmlFor="application-portfolio"><span className={label}>Portfolio / profile URL</span><input id="application-portfolio" name="portfolioLink" type="url" maxLength={500} className={field} placeholder="https://..." /></label>
-        <label className="sm:col-span-2" htmlFor="application-resume"><span className={label}>Resume / CV — PDF only, max 5 MB <span aria-hidden="true">*</span></span><input id="application-resume" required aria-required="true" name="resume" type="file" accept="application/pdf,.pdf" className={`${field} file:mr-3 file:border-0 file:bg-[var(--brand)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-black`} /></label>
-        <label className="sm:col-span-2" htmlFor="application-cover-letter"><span className={label}>Cover letter <span aria-hidden="true">*</span></span><textarea id="application-cover-letter" required aria-required="true" name="coverLetter" minLength={20} maxLength={5000} className={`${field} min-h-40`} placeholder="Kenapa posisi ini cocok buat lo?" /></label>
+        <label htmlFor="application-full-name"><span className={label}>Full name <span aria-hidden="true">*</span></span><input id="application-full-name" required aria-required="true" name="fullName" minLength={2} maxLength={80} className="ui-field mt-2 w-full" autoComplete="name" /></label>
+        <label htmlFor="application-nickname"><span className={label}>Nickname <span aria-hidden="true">*</span></span><input id="application-nickname" required aria-required="true" name="nickname" maxLength={30} className="ui-field mt-2 w-full" autoComplete="nickname" /></label>
+        <label htmlFor="application-email"><span className={label}>Email <span aria-hidden="true">*</span></span><input id="application-email" required aria-required="true" name="email" type="email" maxLength={254} className="ui-field mt-2 w-full" autoComplete="email" /></label>
+        <label htmlFor="application-phone"><span className={label}>Phone <span aria-hidden="true">*</span></span><input id="application-phone" required aria-required="true" name="phone" maxLength={40} className="ui-field mt-2 w-full" autoComplete="tel" /></label>
+        <label htmlFor="application-role"><span className={label}>Preferred role <span aria-hidden="true">*</span></span><select id="application-role" required aria-required="true" name="role" defaultValue="FLEX" className="ui-field mt-2 w-full" />
+          {roles.map((role) => <option key={role}>{role}</option>)}
+        </label>
+        <label htmlFor="application-portfolio"><span className={label}>Portfolio / profile URL</span><input id="application-portfolio" name="portfolioLink" type="url" maxLength={500} className="ui-field mt-2 w-full" placeholder="https://..." /></label>
+        <label className="sm:col-span-2" htmlFor="application-resume"><span className={label}>Resume / CV — PDF only, max 5 MB <span aria-hidden="true">*</span></span><input id="application-resume" required aria-required="true" name="resume" type="file" accept="application/pdf,.pdf" className="ui-field mt-2 w-full file:mr-3 file:border-0 file:bg-[var(--brand)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label>
+        <label className="sm:col-span-2" htmlFor="application-cover-letter"><span className={label}>Cover letter <span aria-hidden="true">*</span></span><textarea id="application-cover-letter" required aria-required="true" name="coverLetter" minLength={20} maxLength={5000} className="ui-field mt-2 min-h-40 w-full py-3" placeholder="Kenapa posisi ini cocok buat lo?" /></label>
         <label className="hidden" aria-hidden="true" htmlFor="application-website"><span>Website</span><input id="application-website" name="website" tabIndex={-1} autoComplete="off" /></label>
       </div>
 
