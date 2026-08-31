@@ -4,6 +4,13 @@ const requireRecruitment = process.env.REQUIRE_RECRUITMENT_E2E === '1';
 const requireAdmin = process.env.REQUIRE_ADMIN_E2E === '1';
 const hasAdminCredentials = Boolean(process.env.E2E_ADMIN_EMAIL && process.env.E2E_ADMIN_PASSWORD);
 
+async function loginAsAdmin(page: import('@playwright/test').Page) {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(process.env.E2E_ADMIN_EMAIL!);
+  await page.getByLabel('Password').fill(process.env.E2E_ADMIN_PASSWORD!);
+  await page.getByRole('button', { name: /Enter Studio/i }).click();
+  await expect(page).toHaveURL(/\/admin(?:\/|$)/);
+}
 
 test.describe('visitor flows', () => {
   test('Visitor opens home', async ({ page }) => {
@@ -55,54 +62,48 @@ test.describe('visitor flows', () => {
   });
 });
 
-
 test.describe('admin flows', () => {
   test.beforeEach(async () => {
-    if (hasAdminCredentials) return;
-    if (requireAdmin) throw new Error('Admin E2E is required but E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD are not configured.');
+    if (!hasAdminCredentials && requireAdmin) {
+      throw new Error('Admin E2E is required but E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD are not configured.');
+    }
   });
 
   test('Admin logs in', async ({ page }) => {
     test.skip(!hasAdminCredentials, 'Admin credentials are not configured for this environment.');
-    await page.goto('/login');
-    await page.getByLabel('Email').fill(process.env.E2E_ADMIN_EMAIL!);
-    await page.getByLabel('Password').fill(process.env.E2E_ADMIN_PASSWORD!);
-    await page.getByRole('button', { name: /Enter Studio/i }).click();
-    await expect(page).toHaveURL(/\/admin(?:\/|$)/);
+    await loginAsAdmin(page);
   });
 
   test('Admin sees application inbox', async ({ page }) => {
     test.skip(!hasAdminCredentials, 'Admin credentials are not configured for this environment.');
-    await page.goto('/login');
-    await page.getByLabel('Email').fill(process.env.E2E_ADMIN_EMAIL!);
-    await page.getByLabel('Password').fill(process.env.E2E_ADMIN_PASSWORD!);
-    await page.getByRole('button', { name: /Enter Studio/i }).click();
+    await loginAsAdmin(page);
     await page.goto('/admin/recruitment');
     await expect(page.getByText('RECRUITMENT INBOX', { exact: true })).toBeVisible();
   });
 
   test('Admin updates content', async ({ page }) => {
     test.skip(!hasAdminCredentials, 'Admin credentials are not configured for this environment.');
-    await page.goto('/login');
-    await page.getByLabel('Email').fill(process.env.E2E_ADMIN_EMAIL!);
-    await page.getByLabel('Password').fill(process.env.E2E_ADMIN_PASSWORD!);
-    await page.getByRole('button', { name: /Enter Studio/i }).click();
+    await loginAsAdmin(page);
     await page.goto('/admin/roster');
     await page.getByRole('button', { name: 'Members', exact: true }).click();
     await expect(page.getByText(/Member editor/i)).toBeVisible();
 
     const nickname = page.getByLabel('Nickname').first();
     const original = await nickname.inputValue();
-    const updated = `${original}-QA`;
-
-    await nickname.fill(updated);
+    await nickname.fill(`${original}-QA`);
     await expect(page.getByText('Unsaved draft', { exact: true })).toBeVisible();
 
     await page.route('**/api/admin/content', async (route) => {
       if (route.request().method() !== 'PUT') return route.continue();
       const body = route.request().postDataJSON() as Record<string, unknown>;
       expect(body.members).toBeTruthy();
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+      const responseBody = {
+        profile: body.profile ?? { name: 'No Flaws', tagline: '', season: '2026', instagram: '#', tiktok: '#', youtube: '#' },
+        members: body.members,
+        achievements: [],
+        gallery: [],
+      };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(responseBody) });
     });
 
     page.once('dialog', async (dialog) => {
