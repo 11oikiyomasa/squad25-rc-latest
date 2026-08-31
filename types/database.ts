@@ -398,7 +398,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          starts_at?: string
+          starts_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -407,7 +407,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          starts_at?: string
+          starts_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -490,7 +490,7 @@ export type Database = {
           recap_url?: string | null
           result_against?: number | null
           result_for?: number | null
-          scheduled_at?: string
+          scheduled_at: string
           status?: string
           updated_at?: string
           visibility?: string
