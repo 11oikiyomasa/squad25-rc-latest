@@ -122,7 +122,7 @@ assert(adminDetail.includes('await requireAdmin()'), 'Admin recruitment detail l
 assert(adminDetail.includes('aria-label="Breadcrumb"'), 'Admin recruitment detail breadcrumb is missing');
 assert(adminDetail.includes('href="/admin/recruitment"'), 'Admin recruitment detail lacks return path');
 const inbox = read('components/recruitment-inbox.tsx');
-assert(inbox.includes('/api/admin/recruitment/${id}'), 'Admin recruitment inbox does not resolve application detail data');
+assert(inbox.includes('href={`/admin/recruitment/${selected.application.id}`}'), 'Recruitment inbox does not connect to canonical application detail');
 
 const home = read('components/home-ux.tsx');
 assert(home.includes("from '@/components/member-card'"), 'Homepage does not use shared MemberCard');
