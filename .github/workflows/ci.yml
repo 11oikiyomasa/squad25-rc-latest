@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Unit tests
+        run: npm run test:unit
       - name: Verify source and agent contract
         run: npm run verify
       - name: Validate AI reviewer runner
@@ -57,6 +59,21 @@ jobs:
           done
           status=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/health)
           case "$status" in 200|503) ;; *) echo "Unexpected /api/health status: $status"; cat /tmp/squad25-server.log; exit 1;; esac
+      - name: Integration tests
+        env:
+          TEST_BASE_URL: http://127.0.0.1:3000
+          NEXT_PUBLIC_SUPABASE_URL: https://wyjsosamlkbwksrslona.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          REQUIRE_SUPABASE_TESTS: "0"
+        run: npm run test:integration
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false @playwright/test@1.62.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E tests
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test
       - name: Stop production server
         if: always()
         run: |
