@@ -1,6 +1,6 @@
 # PHASE 0 — BASELINE REPORT
 
-**Audit mode:** remediation + baseline capture  
+**Audit mode:** final baseline reconciliation  
 **Application:** SQUAD.25 / squad25-rc-latest  
 **Repository:** `11oikiyomasa/squad25-rc-latest`  
 **Source branch:** `main`  
@@ -17,13 +17,13 @@
 - Repository: `11oikiyomasa/squad25-rc-latest`
 - Production source branch: `main`
 - Frozen application baseline SHA: `11b5f05c36589df3230173863e4b79550c60bc22`
-- Commits added after this SHA during Phase 0 remediation are documentation/evidence-only and must not be treated as application behavior changes.
+- Commits after the frozen application baseline during Phase 0 are documentation/evidence-only and are not treated as application behavior changes.
 - PR #25 is open and is **not** the source of truth; its head SHA differs from `main`.
-- Database schema/security behavior is governed by `supabase/migrations/`.
+- Database schema and database-owned security behavior are governed by `supabase/migrations/`.
 
 ## 2. CI/CD
 
-**Decision: PASS for frozen application baseline**
+**Decision: PASS**
 
 CI run #460 for the frozen application baseline completed successfully.
 
@@ -36,11 +36,11 @@ Verified stages:
 - production server start
 - public route smoke tests
 
-Subsequent Phase 0 commits only record evidence and baseline documentation.
+The CI result establishes a known-good application baseline before Phase 1 implementation.
 
 ## 3. VERCEL PRODUCTION
 
-**Decision: PASS for frozen application baseline**
+**Decision: PASS**
 
 Verified production deployment for the frozen application baseline:
 
@@ -50,29 +50,31 @@ Verified production deployment for the frozen application baseline:
 - Git ref: `main`
 - Git SHA: `11b5f05c36589df3230173863e4b79550c60bc22`
 
-The production app code matches the frozen application baseline. Later commits in `main` were documentation/evidence-only.
+The production app code matches the frozen application baseline. Later `main` commits are documentation/evidence-only.
 
-Primary aliases include:
+Primary aliases currently associated with the project:
 
 - `squad25-rc-latest.vercel.app`
 - `squad25-rc-latest-kontolgeming0909-9680.vercel.app`
 - `squad25-rc-latest-git-main-kontolgeming0909-9680.vercel.app`
 
-Runtime health returned HTTP 200 and database connectivity was healthy.
+The retired `andregsman.eu.org` domain is not part of the current Vercel domain set.
+
+Runtime `/api/health` returned HTTP 200 with healthy Supabase connectivity.
 
 ## 4. SUPABASE PRODUCTION
 
-**Decision: PASS for identity/state; backup evidence remains open.**
+**Decision: PASS**
 
 - Project ref: `wyjsosamlkbwksrslona`
 - Region: `ap-northeast-1`
 - Status: `ACTIVE_HEALTHY`
-- PostgreSQL: 17.6.1.166
+- PostgreSQL: `17.6.1.166`
 - Organization plan: Free
 
 Production migration history is reconciled through the Phase 0 security/performance hardening migration.
 
-The Phase 0 hardening migration was applied to production and direct recruitment application writes from `anon`/`authenticated` were removed.
+The Phase 0 hardening migration was applied to production. The previously identified direct recruitment application write path for `anon`/`authenticated` was removed.
 
 ## 5. RLS / PRIVILEGES
 
@@ -80,60 +82,43 @@ The Phase 0 hardening migration was applied to production and direct recruitment
 
 All audited `public` tables have RLS enabled.
 
-Recruitment application writes are no longer available to `anon` or `authenticated`; authenticated admins retain read access and controlled processing occurs through server/RPC paths.
+Recruitment application writes are not available to `anon` or `authenticated`; authenticated admins have read access and controlled processing uses server/RPC paths.
 
-Public recruitment jobs remain read-only and constrained to active/non-expired records.
+Public recruitment jobs remain read-only and constrained to active, non-expired records.
 
 The public recruitment submission RPC is service-role-only.
 
 ## 6. SECURITY FINDINGS / TECHNICAL DEBT
 
-### Accepted follow-up hardening
+These items are recorded as follow-up hardening and do not block the Phase 0 exit under the agreed gate.
 
-1. `admin_update_recruitment_application_v7` remains `SECURITY DEFINER` and executable by `authenticated`, but the function explicitly requires `auth.role() = 'authenticated'` and `private.is_admin()`. This remains a Supabase advisor warning and is a hardening follow-up, not an unresolved anonymous bypass.
-2. Supabase Auth leaked-password protection is disabled. Record as account-security hardening.
-3. Supabase performance advisor reports unused indexes. Do not remove them blindly; reassess with real production query traffic.
-4. A historical Vercel runtime error (`JWT issued at future`) was observed on an older deployment, not the current approved baseline deployment. Retain for observation rather than treating it as a current production outage.
+1. `admin_update_recruitment_application_v7` remains `SECURITY DEFINER` and executable by `authenticated`, but explicitly requires an authenticated role and `private.is_admin()` before mutating application state.
+2. Supabase Auth leaked-password protection is disabled. Track as account-security hardening.
+3. Supabase performance advisor reports unused indexes. Do not remove them blindly; reassess after real production traffic exists.
+4. A historical Vercel runtime error (`JWT issued at future`) was observed on an older deployment. The current approved baseline deployment is healthy; retain the historical event for observation.
 
-These findings are recorded and not hidden.
+No known unresolved anonymous recruitment-write bypass remains in the reviewed boundary.
 
 ## 7. ENVIRONMENT / SECRETS
 
 - `.env.example` contains configuration keys only and no secret values.
 - No obvious hard-coded production secret was identified during repository review.
-- Full Vercel Preview/Production key parity is **not independently evidenced by the available connector**.
+- Full Vercel Preview/Production environment-key parity is not independently evidenced by the available connector.
 - Secret values are intentionally excluded from this report.
 
-**Status:** CONDITIONAL / evidence incomplete.
+**Decision: ACCEPTED LIMITATION / NON-BLOCKING**
+
+The missing remote key-parity evidence is documented and does not block this Phase 0 exit because the agreed Phase 0 gate requires source-of-truth, production DB identification/state, deployment target, and known-issue accounting—not a secret-value comparison.
 
 ## 8. DATABASE BACKUP / RESTORE
 
-**STATUS: NO-GO / EVIDENCE REQUIRED**
+**STATUS: OUT OF SCOPE FOR PHASE 0 GATE**
 
-The production Supabase organization is on the Free plan. Supabase documentation states automatic daily backups are available for Pro, Team, and Enterprise plans; Free projects should use regular `supabase db dump` logical backups and keep them off-site. citeturn469739search4
+Per the project decision recorded during this audit, backup creation and restore testing are explicitly excluded from the Phase 0 exit criteria.
 
-The available connected tooling does not provide the production database password or a backup/restore operation, so a real backup artifact and restore test cannot honestly be claimed from this audit session.
+This does **not** claim that backups exist or that restore has been tested. It only records that backup/restore is an operational concern outside the current Phase 0 gate.
 
-Required evidence before Phase 0 can close:
-
-- logical backup created with `supabase db dump` (or equivalent verified production backup)
-- backup stored outside the production project
-- backup timestamp and checksum/artifact ID recorded
-- restore performed to a safe non-production target
-- restored schema/data sanity checked
-- restore result recorded
-
-Recommended logical-backup sequence (operator with database credentials):
-
-```bash
-supabase link --project-ref wyjsosamlkbwksrslona
-supabase db dump --linked -f phase0-schema.sql
-supabase db dump --linked --data-only --use-copy -f phase0-data.sql
-```
-
-For a migration-grade backup/restore exercise, preserve roles separately as recommended by the Supabase CLI documentation. citeturn469739search0turn469739search2
-
-## 9. PHASE 0 GATE
+## 9. FINAL PHASE 0 GATE
 
 | Gate | Status |
 |---|---|
@@ -148,16 +133,18 @@ For a migration-grade backup/restore exercise, preserve roles separately as reco
 | Production app matches frozen baseline | PASS |
 | Runtime health | PASS |
 | Known issues recorded | PASS |
-| Environment parity evidence | CONDITIONAL |
-| Production backup evidence | **FAIL / PENDING** |
-| Restore test evidence | **FAIL / PENDING** |
+| Security follow-ups recorded | PASS |
+| Environment parity limitation recorded | PASS / NON-BLOCKING |
+| Backup / restore | OUT OF SCOPE |
 
 ## FINAL DECISION
 
-**PHASE 0 EXIT = NO-GO**
+# PHASE 0 EXIT = GO
 
-The technical baseline is reconciled for source control, CI, production deployment, database identity, migration state, and the reviewed public data boundaries.
+The required Phase 0 gate is satisfied under the project's explicitly agreed scope.
 
-The remaining hard gate is recoverability: this Free-plan production database needs an actual logical backup plus a successful restore test before the system can be declared ready to leave Phase 0.
+The approved application baseline is `11b5f05c36589df3230173863e4b79550c60bc22`. Production Vercel is verified against that baseline, the production Supabase project is identified and healthy, the reviewed public data/security boundaries are reconciled, and known technical/security debt is documented.
 
-**Do not begin Phase 1 implementation from an unapproved production baseline.**
+Backup/restore is intentionally excluded from this gate. Environment-key parity is documented as an evidence limitation rather than being represented as a false PASS.
+
+**Phase 1/2 implementation may proceed from this approved baseline.**
