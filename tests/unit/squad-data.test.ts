@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { members, normalizeYoutubeId } from '../../data/squad.ts';
+import { members, normalizeYoutubeId } from '../../data/squad';
 
 test('content normalization accepts a bare YouTube id', () => {
   assert.equal(normalizeYoutubeId('dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
