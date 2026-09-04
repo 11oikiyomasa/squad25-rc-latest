@@ -61,3 +61,13 @@ test('regression: publish RPC can execute its private admin check without exposi
   assert.match(migration, /revoke execute on function public\.publish_squad_content\(jsonb\) from anon/);
   assert.match(migration, /grant execute on function public\.publish_squad_content\(jsonb\) to authenticated/);
 });
+
+test('regression: stale admin content publish must use an optimistic concurrency token', () => {
+  const route = read('app/api/admin/content/route.ts');
+  const publishMigration = read('supabase/migrations/20260828201517_atomic_admin_publish.sql');
+
+  assert.match(route, /expectedUpdatedAt/);
+  assert.match(route, /expected_updated_at/);
+  assert.match(route, /status: 409/);
+  assert.match(publishMigration, /expected_updated_at/);
+});
