@@ -6,11 +6,12 @@ export type ContentSnapshot = {
   members: Member[];
   achievements: typeof seedAchievements;
   gallery: typeof seedGallery;
+  revision?: string | null;
 };
 
 type MemberRow = { id: string; slug: string; number: string; nickname: string; full_name: string | null; role: Member['role']; main_hero: string | null; status: Member['status']; bio: string; accent: string; photo_url: string | null; sort_order: number };
 type MontageRow = { id: string; member_id: string; title: string; hero: string | null; duration: string; youtube_id: string; description: string; published_at: string | null; sort_order: number };
-type ProfileRow = { id: number; name: string; tagline: string; season: string; instagram_url: string | null; tiktok_url: string | null; youtube_url: string | null };
+type ProfileRow = { id: number; name: string; tagline: string; season: string; instagram_url: string | null; tiktok_url: string | null; youtube_url: string | null; updated_at: string };
 type GalleryRow = { id: string; title: string; caption: string; image_url: string; sort_order: number };
 type AchievementRow = { year: number | null; title: string; description: string; };
 
@@ -38,12 +39,12 @@ function createPublicClient() {
 }
 
 export async function getSquadContent(): Promise<ContentSnapshot> {
-  if (!isSupabaseConfigured()) return { profile: squadProfile, members: seedMembers, achievements: seedAchievements, gallery: seedGallery };
+  if (!isSupabaseConfigured()) return { profile: squadProfile, members: seedMembers, achievements: seedAchievements, gallery: seedGallery, revision: null };
 
   try {
     const supabase = createPublicClient();
     const [profileResult, membersResult, montagesResult, achievementsResult, galleryResult] = await Promise.all([
-      supabase.from('squad_settings').select('id,name,tagline,season,instagram_url,tiktok_url,youtube_url').eq('id', 1).maybeSingle(),
+      supabase.from('squad_settings').select('id,name,tagline,season,instagram_url,tiktok_url,youtube_url,updated_at').eq('id', 1).maybeSingle(),
       supabase.from('members').select('id,slug,number,nickname,full_name,role,main_hero,status,bio,accent,photo_url,sort_order').order('sort_order', { ascending: true }),
       supabase.from('montages').select('id,member_id,title,hero,duration,youtube_id,description,published_at,sort_order').order('sort_order', { ascending: true }),
       supabase.from('achievements').select('year,title,description').order('sort_order', { ascending: true }),
@@ -90,6 +91,7 @@ export async function getSquadContent(): Promise<ContentSnapshot> {
       members,
       achievements: (achievementRows as unknown as AchievementRow[]).map((a) => ({ year: String(a.year ?? ''), title: a.title, note: a.description })),
       gallery: (galleryRows as unknown as GalleryRow[]).map((g) => ({ id: g.id, title: g.title, meta: g.caption, image: g.image_url })),
+      revision: profile ? (profile as ProfileRow).updated_at : null,
     };
   } catch (error) {
     if (error instanceof Error) throw error;
