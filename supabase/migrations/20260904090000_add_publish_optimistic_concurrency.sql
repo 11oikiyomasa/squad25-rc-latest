@@ -3,7 +3,7 @@ create or replace function public.publish_squad_content(payload jsonb)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, private
 as $$
 declare
   m jsonb;
