@@ -66,6 +66,8 @@ export async function PUT(request: Request) {
   const members = candidate.members;
   const achievements = candidate.achievements;
   const gallery = candidate.gallery;
+  const expectedUpdatedAt = typeof candidate.expectedUpdatedAt === 'string' ? candidate.expectedUpdatedAt.trim() : '';
+  if (!expectedUpdatedAt) return NextResponse.json({ error: 'Content revision is required. Reload the editor and try again.' }, { status: 409 });
   if (!profile || typeof profile !== 'object' || !Array.isArray(members) || members.length !== 25 || !Array.isArray(achievements) || !Array.isArray(gallery)) {
     return NextResponse.json({ error: 'Content must contain a profile, exactly 25 members, achievements, and gallery.' }, { status: 422 });
   }
@@ -157,6 +159,7 @@ export async function PUT(request: Request) {
 
   const { data: result, error: publishError } = await client.rpc('publish_squad_content', {
     payload: {
+      expected_updated_at: expectedUpdatedAt,
       profile: profilePayload,
       members: normalizedMembers,
       achievements: normalizedAchievements,
@@ -166,6 +169,9 @@ export async function PUT(request: Request) {
   if (publishError) {
     if (publishError.code === '42501' && publishError.message === 'Admin access required.') {
       return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+    }
+    if (publishError.code === '40001') {
+      return NextResponse.json({ error: 'Content changed since this draft was loaded. Reload the editor before publishing again.' }, { status: 409 });
     }
     console.error('Admin publish RPC failed:', publishError);
     return NextResponse.json({ error: 'Publish failed. The server could not save the content.' }, { status: 500 });
