@@ -66,7 +66,11 @@ export async function PUT(request: Request) {
   const members = candidate.members;
   const achievements = candidate.achievements;
   const gallery = candidate.gallery;
-  const expectedUpdatedAt = typeof candidate.expectedUpdatedAt === 'string' ? candidate.expectedUpdatedAt.trim() : '';
+  const expectedUpdatedAt = typeof candidate.expectedUpdatedAt === 'string'
+    ? candidate.expectedUpdatedAt.trim()
+    : typeof candidate.revision === 'string'
+      ? candidate.revision.trim()
+      : '';
   if (!expectedUpdatedAt) return NextResponse.json({ error: 'Content revision is required. Reload the editor and try again.' }, { status: 409 });
   if (!profile || typeof profile !== 'object' || !Array.isArray(members) || members.length !== 25 || !Array.isArray(achievements) || !Array.isArray(gallery)) {
     return NextResponse.json({ error: 'Content must contain a profile, exactly 25 members, achievements, and gallery.' }, { status: 422 });
